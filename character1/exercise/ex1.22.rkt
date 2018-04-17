@@ -1,35 +1,22 @@
 #lang racket
 
+
 (define (square x)
   (* x x))
 
-(define (even? n)
-  (= (remainder n 2) 0))
+(define (smallest-divison n)
+  (find-divisor n 2))
 
-#|base的exp次幂对m取模|#
-(define (expmod base exp m)
-  (cond ((= exp 0) 1)
-        ((even? exp) (remainder (square(expmod base
-                                               (/ exp 2)
-                                               m))
-                                m))
-        (else
-         (remainder (* base (expmod base (- exp 1) m))
-                    m))))
-
-
-(define (fermat-test n)
-  (define (try-it a)
-    (= (expmod a n n) a))
-  (try-it (+ 1 (random (- n 1)))))
-
-(define (fast-prime? n times)
-  (cond((= times 0) #t)
-       ((fermat-test n)(fast-prime? n (- times 1)))
-       (else #f)))
+(define (find-divisor n x)
+  (cond((> (square x) n) n)
+       ((divisor? n x) x)
+       (else (find-divisor n (+ x 1)))))
+(define (divisor? n x)
+  (= 0 (remainder n x)))
 
 (define (prime? n)
-  (fast-prime? n 100))
+  (= n (smallest-divison n)))
+
 
 (define (timed-prime-test n)
   (newline)
@@ -39,16 +26,47 @@
 (define (start-prime-test n start-time)
   (if(prime? n)
      (report-prime (- (current-milliseconds) start-time))
-      (display "not prime")))
+     (display "")))
 
 (define (report-prime elapsed-time)
   (display " *** ")
   (display elapsed-time))
 
-#|
+(define (even? x)
+  (= 0 (remainder x 2)))
 
 
-|#
+
+
+
+;获取下一个奇数
+(define (next-odd x)
+  (if(= 0 (remainder x 2))
+     (+ 1 x)
+     (+ 2 x)))
+
+
+(define (search-for-primes n counter)
+  (cond ((= counter 0) (display "finished"))
+        ((prime? n)
+         (newline)
+         (timed-prime-test n)
+         (search-for-primes (next-odd n) (- counter 1)))
+        (else (search-for-primes (next-odd n) counter))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
