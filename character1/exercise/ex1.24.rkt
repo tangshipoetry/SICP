@@ -1,8 +1,8 @@
 #lang racket
-
+;算平方
 (define (square x)
   (* x x))
-
+;判断是否偶数
 (define (even? n)
   (= (remainder n 2) 0))
 
@@ -32,8 +32,8 @@
   (fast-prime? n 10))
 
 (define (next-test x)
-  (if(= x 2)
-     3
+  (if(even? x)
+     (+ 1 x)
      (+ 2 x)))
 
 
