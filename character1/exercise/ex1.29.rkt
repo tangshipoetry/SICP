@@ -5,13 +5,9 @@
 (define (even? x)
   (= 0 (remainder x 2)))
 
+
 (define (inc a)
   (+ 1 a))
-
-(define (spsc m)
-  (cond ((= 1 m) 1)
-        ((even? m) 4)
-        (else 2)))
 
 (define (sum term a next b)
   (if(> a b)
@@ -19,18 +15,25 @@
      (+ (term a)
         (sum term (next a) next b))))
 
-(define (simpson-term counter f a h)
-  (* (spsc counter)
-     (f (+ a (* counter h)))))
+
+
+(define (simpson-sum f a b n)
+  (define h (/ (- b a) n))
+  (define (spsc m)
+  (cond ((or (= 0 m) (= n m)) 1)
+        ((even? m) 2)
+        (else 4)))
+  (define (factor x)(f (+ a (* x h))))
+  (define (simpson-term x)
+    (* (spsc x) (factor x)))
+  (if(not (even? n))
+     (error "n can't be odd")
+     (* (/ h 3.0) (sum simpson-term 0 inc n))))
 
 
 
 
-
-
-
-
-
+(define (cube x)(* x x x))
 
 
 
