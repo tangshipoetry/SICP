@@ -1,22 +1,14 @@
 #lang racket
 
-;求平均数
-(define (average x y)(/ (+ x y) 2))
+(define (cube x)(* x x x))
+(define (square x)(* x x))
 
-;平均阻尼
-(define (average-dump f)
-  (lambda(x)(average x (f x))))
-
+;导数
 (define dx 0.00001)
 (define (derive f)
   (lambda(x)(/ (- (f (+ x dx)) (f x)) dx)))
 
-
-(define (cube x)(* x x x))
-(define (square x)(* x x))
-
-
-
+;寻找不动点
 (define tolerance 0.000001)
 (define (close-enough? a b)
     (< (abs (- a b)) tolerance))
@@ -28,13 +20,43 @@
          (try next))))
   (try first-guess))
 
+;牛顿变换以及牛顿法
 (define (newton-transform g)
   (lambda(x)(- x (/ (g x) ((derive g) x)))))
 (define (newton-method g guess)
   (fix-point (newton-transform g) guess))
 
-(define (sqrt x)
-  (newton-method (lambda(y)(- (square y) x)) 1.0))
+
+(define (cubic a b c)
+  (lambda(x)
+    (+ (cube x) (* a (square x)) (* b x) c)))
+
+(define (cube-root a b c)
+  (newton-method (cubic a b c) 1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
