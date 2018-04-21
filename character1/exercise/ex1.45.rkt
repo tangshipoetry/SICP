@@ -30,7 +30,7 @@
 (define (adump-times x)
   (if(= x 1)
      1
-     (quotient x 2)))
+     (floor (/ (log x)(log 2)))))
 
 ;
 (define (n-power-root x n)
