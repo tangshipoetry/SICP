@@ -67,6 +67,8 @@
 
 
 
+#|
+可读性牺牲太大
 (define (new-mul-interval x y)
   (let ((a (lower-bound x))
         (b (upper-bound x))
@@ -74,21 +76,22 @@
         (d (upper-bound y)))
     (if(> a 0)
        (if(> c 0)
-          ()
+          (make-interval (* a c) (* b d))
           (if(< d 0)
-             ()
-             ()))
+             (make-interval (* b c) (* a d))
+             (make-interval (* b c) (* b d))))
        (if(< b 0)
           (if(> c 0)
-             ()
+             (make-interval (* a d) (* b c))
              (if(< d 0)
-                ()
-                ()))
+                (make-interval (* b d) (* a c))
+                (make-interval (* a d) (* a c))))
           (if(> c 0)
-             ()
+             (make-interval (* a d) (* b d))
              (if(< d 0)
-                ()
-                ()))))))
+                (make-interval (* b c) (* a c))
+                (make-interval (min (* a d) (* b c))
+                               (* a c))))))))|#
 
 
 
