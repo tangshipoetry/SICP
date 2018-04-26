@@ -7,15 +7,24 @@
        items
        (last-pair (cdr items)))))
 
-
-(define (reverse items)
+;自己写的
+#|(define (reverse items)
   (define result '())
   (define (iter list r)
     (if(null? list)
        r
        (iter (cdr list)
              (cons (car list) r))))
-  (iter items result))
+  (iter items result))|#
+
+
+
+;网上查的、
+(define (reverse items)
+  (if(null? items)
+     items
+     (append (reverse (cdr items))
+             (list (car items)))))
 
 
 
