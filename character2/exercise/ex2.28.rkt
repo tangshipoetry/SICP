@@ -9,7 +9,6 @@
 (define tree (list e f))
 
 #||#
-
 (define (fringe items)
   (if(null? items)
      '()
@@ -21,9 +20,7 @@
 
 
 
-
-
-
+(fringe tree)
 
 
 

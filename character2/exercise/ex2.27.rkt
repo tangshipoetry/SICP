@@ -22,7 +22,8 @@
 
 
 
-#|;双重递归————引用网上
+#|
+;迭代，互相引用————引用网上
 (define (deep-reverse tree)
   (define (iter items result)
     (if(null? items)
@@ -35,28 +36,28 @@
   (iter tree '()))|#
 
 #|
-;利用自带;list?过程判断
+;利用自带的list?或pair?过程判断
+;使用append依次操作
 (define (deep-reverse tree)
   (if(null? tree)
      '()
      (append (deep-reverse (cdr tree))
-             (if(list? (car tree))
+             (if(pair? (car tree))
                 (list (deep-reverse (car tree)))
                 (list (car tree))))))
 |#
 
-
-#|(cons (deep-reverse (cdr tree))
-             (deep-reverse (car tree)))|#
-
-
-;使用reverse和map————引用网上
-(define (deep-reverse items)
+#|;使用reverse和map————引用网上
+(define (deep-reverse tree)
   (reverse (map (lambda(x)
                   (if(pair? x)
                      (deep-reverse x)
                      x))
-                items)))
+                tree)))
+|#
+
+
+
 
 
 (deep-reverse tree)
