@@ -25,26 +25,33 @@
          (accumulate op initial (cdr sequence)))))
 
 
+(define (enumerate-tree tree)
+  (if(null? tree)
+     null
+     (if(pair? tree)
+        (append (enumerate-tree (car tree))
+                (enumerate-tree (cdr tree)))
+        (list tree))))
 
 
-(define (map p sequence)
-  (accumulate (lambda(x y)
-                (cons (p x)
-                      y))
-              null
-              sequence))
 
-(define (append seq1 seq2)
-  (accumulate cons seq2 seq1))
+(define a (list 1 2 3))
+(define b (list 4 5 6))
+(define c (list 7 8 9))
+(define d (list 10 11 12))
+(define e (list a b))
+(define f (list c d))
+(define tree (list e f))
 
-(define (length sequence)
-  (accumulate (lambda(x y)
-                (if(null? x)
-                   0
-                   (+ 1 y)))
-              0
-              sequence))
 
+(define (accumulate-n op init seqs)
+  (if(null? (car seqs))
+            null
+            (cons (accumulate op init (map car seqs))
+                  (accumulate-n op init (map cdr seqs)))))
+
+
+(accumulate-n + 0 e)
 
 
 

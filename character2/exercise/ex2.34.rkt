@@ -25,25 +25,17 @@
          (accumulate op initial (cdr sequence)))))
 
 
-
-
-(define (map p sequence)
-  (accumulate (lambda(x y)
-                (cons (p x)
-                      y))
-              null
-              sequence))
-
-(define (append seq1 seq2)
-  (accumulate cons seq2 seq1))
-
-(define (length sequence)
-  (accumulate (lambda(x y)
-                (if(null? x)
-                   0
-                   (+ 1 y)))
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda(this-coeff higher-term)
+                (+ this-coeff
+                   (* x higher-term)))
               0
-              sequence))
+              coefficient-sequence))
+
+
+
+
+
 
 
 
