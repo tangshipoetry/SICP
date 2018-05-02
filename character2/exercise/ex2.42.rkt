@@ -30,6 +30,32 @@
               null
               (map proc seq)))
 
+#|
+;二元列表——摘自网上
+(define empty-board null)
+
+(define (adjoin-position new-row k rest-of-queens)
+  (cons new-row rest-of-queens))
+
+(define (safe? k positions)
+  (iter (car positions)
+        (cdr positions)
+        1))
+
+(define (iter row-of-new-queen rest-queens i)
+  (if(null? rest-queens)
+     #t
+     (let ([current-row (car rest-queens)])
+       (if(or (= row-of-new-queen current-row)
+              (= row-of-new-queen (+ current-row i))
+              (= row-of-new-queen (- current-row i)))
+          #f
+          (iter row-of-new-queen
+                (cdr rest-queens)
+                (+ 1 i))))))
+
+|#
+
 
 (define (queens board-size)
   (define (queen-cols k);在前K-1列中已经安全存放棋子的情况下,在第K列安全放置棋子
@@ -53,10 +79,10 @@
 (define (adjoin-position new-row k rest-of-queens)
    (cons (list new-row k) rest-of-queens))
 
-;求对角线对比
+;判断两个棋子是否在同一个对角线
 (define (diagonal? p1 p2)
-  (or (= (- (col p1) (row p1)) (- (col p2) (row p2)))
-      (= (+ (col p1) (row p1)) (+ (col p2) (row p2)))))
+  (or (= (- (row p1) (col p1)) (- (row p2) (col p2)))
+      (= (+ (row p1) (col p1)) (+ (row p2) (col p2)))))
 
 ;获取位置的行
 (define (row position)
@@ -67,24 +93,17 @@
   (cadr position))
 
 (define (safe? k positions)
-  (if(pair? positions)
-     ()
-     #t)
-  )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  (let ([new-queen (car positions)])
+    (define (iter rq)
+      (if(pair? rq)
+         (let ([current-queen (car rq)])
+           (if(or (= (col new-queen) (col current-queen))
+                  (= (row new-queen) (row current-queen))
+                  (diagonal? new-queen current-queen))
+              #f
+              (iter (cdr rq))))
+         #t))
+    (iter (cdr positions))))
 
 
 
