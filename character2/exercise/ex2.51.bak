@@ -44,34 +44,25 @@
                   (sub-vect (m corner2) new-origin)))))))
 
 
-#|
-(define (flip-vert painter)
-  (transform-painter painter
-                     (make-vect 0.0 1.0) ; new origin
-                     (make-vect 1.0 1.0) ; new end of edge1
-                     (make-vect 0.0 0.0))) ; new end of edge2
-|#
 
 
-(define (flip-horiz painter)
-  (transform-painter painter
-                     (make-vect 1.0 0.0) ; new origin
-                     (make-vect 0.0 0.0) ; new end of edge1
-                     (make-vect 1.0 1.0))) ; new end of edge2
 
 
-(define (counterroute180 painter)
-  (transform-painter painter
-                     (make-vect 1.0 1.0) ; new origin
-                     (make-vect 0.0 1.0) ; new end of edge1
-                     (make-vect 1.0 0.0))) ; new end of edge2
 
 
-(define (counterroute270 painter)
-  (transform-painter painter
-                     (make-vect 0.0 1.0) ; new origin
-                     (make-vect 0.0 0.0) ; new end of edge1
-                     (make-vect 1.0 1.0))) ; new end of edge2
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
