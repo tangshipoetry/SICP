@@ -82,18 +82,16 @@
 
 
 (define (encode-symbol symbol tree)
-  (if(or (null? tree) (not (element? symbol (symbols tree))))
-     (error "symbol doesn't exist in tree" symbol)
-     (let ([sub-left-tree (left-branch tree)][sub-right-tree (right-branch tree)])
-       (let([left-symbols (symbols sub-left-tree)][right-symbols (symbols sub-right-tree)])
-         (cond ((element? symbol left-symbols)
-                (if (leaf? sub-left-tree)
-                    (list 0)
-                    (cons 0 (encode-symbol symbol sub-left-tree))))
-               ((element? symbol right-symbols)
-                (if (leaf? sub-right-tree)
-                    (list 1)
-                    (cons 1 (encode-symbol symbol sub-right-tree)))))))))
+  (if(leaf? tree)
+     null
+     (if(not (element? symbol (symbols tree)))
+        (error "symbol doesn't exist in tree" symbol)
+        (let ([sub-left-tree (left-branch tree)][sub-right-tree (right-branch tree)])
+          (let([left-symbols (symbols sub-left-tree)][right-symbols (symbols sub-right-tree)])
+            (cond ((element? symbol left-symbols)
+                   (cons 0 (encode-symbol symbol sub-left-tree)))
+                  ((element? symbol right-symbols)
+                   (cons 1 (encode-symbol symbol sub-right-tree)))))))))
 
 
 

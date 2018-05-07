@@ -1,6 +1,5 @@
 #lang racket
 
-
 (define (make-leaf symbol weight)
   (list 'leaf symbol weight))
 
@@ -55,7 +54,7 @@
   (cond ((null? set) (list x))
         ((< (weight x) (weight (car set))) (cons x set))
         (else (cons (car set)
-                    (adjoin-set x (cdr x set))))))
+                    (adjoin-set x (cdr set))))))
 
 ;将元素——权重表转化为树叶,并按照从小到大顺序排列
 (define (make-leaf-set pairs)
@@ -83,18 +82,17 @@
 
 
 (define (encode-symbol symbol tree)
-  (if(or (null? tree) (not (element? symbol (symbols tree))))
-     (error "symbol doesn't exist in tree" symbol)
-     (let ([sub-left-tree (left-branch tree)][sub-right-tree (right-branch tree)])
-       (let([left-symbols (symbols sub-left-tree)][right-symbols (symbols sub-right-tree)])
-         (cond ((element? symbol left-symbols)
-                (if (leaf? sub-left-tree)
-                    (list 0)
-                    (cons 0 (encode-symbol symbol sub-left-tree))))
-               ((element? symbol right-symbols)
-                (if (leaf? sub-right-tree)
-                    (list 1)
-                    (cons 1 (encode-symbol symbol sub-right-tree)))))))))
+  (if(leaf? tree)
+     null
+     (if(not (element? symbol (symbols tree)))
+        (error "symbol doesn't exist in tree" symbol)
+        (let ([sub-left-tree (left-branch tree)][sub-right-tree (right-branch tree)])
+          (let([left-symbols (symbols sub-left-tree)][right-symbols (symbols sub-right-tree)])
+            (cond ((element? symbol left-symbols)
+                   (cons 0 (encode-symbol symbol sub-left-tree)))
+                  ((element? symbol right-symbols)
+                   (cons 1 (encode-symbol symbol sub-right-tree)))))))))
+
 
 
 (define (generate-huffman-tree pairs)
@@ -107,17 +105,72 @@
        (successive-merge (adjoin-set (make-code-tree (car pairs) (cadr pairs))
                                      (cddr pairs))))))
 
+(define a
+  '( (A 1)
+     (B 2)
+     (C 4)
+     (D 8)
+     (E 16)))
+
+(define b
+  '( (A 1)
+     (B 2)
+     (C 4)
+     (D 8)
+     (E 16)
+     (F 32)
+     (G 64)
+     (H 128)
+     (I 256)
+     (J 512)))
+
+
+(generate-huffman-tree a)
+(generate-huffman-tree b)
 
 
 
 
 
+#|
 
+'(((((leaf A 1)
+     (leaf B 2)
+     (A B) 3)
+    (leaf C 4)
+    (A B C) 7)
+   (leaf D 8)
+   (A B C D) 15)
+  (leaf E 16)
+  (A B C D E)
+  31)
+{a b c d e} 31
+                     /           \
+                {a b c d} 15      e 16
+                 /     \
+           {a b c} 7    d 8
+             /    \
+        {a b} 3    c 4
+         /   \
+      a 1    b 2
 
-
-
-
-
+'((((((((((leaf A 1) (leaf B 2) (A B) 3) (leaf C 4) (A B C) 7) (leaf D 8) (A B C D) 15) (leaf E 16) (A B C D E) 31)
+      (leaf F 32)
+      (A B C D E F)
+      63)
+     (leaf G 64)
+     (A B C D E F G)
+     127)
+    (leaf H 128)
+    (A B C D E F G H)
+    255)
+   (leaf I 256)
+   (A B C D E F G H I)
+   511)
+  (leaf J 512)
+  (A B C D E F G H I J)
+  1023)
+|#
 
 
 
