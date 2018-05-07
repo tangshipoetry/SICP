@@ -11,7 +11,7 @@
      #t
      (if(< x (entry tree))
         (element-of-set? x (left-branch tree))
-        (element-of-set? x (right-branch tree)))))
+        (element-of-set? x (right-branch tree)))))n
 
 (define (adjoin x tree)
   (cond ((null? tree)(make-tree x null null))
