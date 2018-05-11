@@ -40,7 +40,7 @@
     (cons (* r (cos a))(* r (sin a))))
   
   ;interface to the rest of the system
-  (define (tag x)(attach-tag 'rectangular x))
+  (define (tag x) (attach-tag 'rectangular x))
   (put 'real-part '(rectangular) real-part)
   (put 'imag-part '(rectangular) imag-part)
   (put 'magnitude '(rectangular) manitude)
