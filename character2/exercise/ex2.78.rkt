@@ -1,5 +1,23 @@
 #lang racket
 
+(define (attach-tag data-tag contents)
+  (if(number? contents)
+     contents
+     (cons data-tag contents)))
+
+(define (type-tag datum)
+  (if(number? datum)
+     'scheme-number
+     (if(pair? datum)
+        (car datum)
+        (error "bad tagged datum" datum))))
+(define (contents datum)
+  (if(number? datum)
+     datum
+     (if(pair? datum)
+        (cdr datum)
+        (error "bad tagged datum" datum))))
+
 (define (gcd a b)
   (if(= b 0)
      a
@@ -8,17 +26,6 @@
                      b))))
 
 (define (square x)(expt x 2))
-
-(define (attach-tag data-tag contents) (cons data-tag contents))
-
-(define (type-tag datum)
-  (if(pair? datum)
-     (car datum)
-     (error "bad tagged datum" datum)))
-(define (contents datum)
-  (if(pair? datum)
-     (cdr datum)
-     (error "bad tagged datum" datum)))
 
 (define (install-rectangular-package)
   ;internal procedure
@@ -93,9 +100,6 @@
 
 (define (make-from-mag-ang r a)
   ((get 'make-from-mag-ang 'polar) r a))
-
-
-
 
 
 (define (add x y)(apply-generic 'add x y))
@@ -190,12 +194,24 @@
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'complex
        (lambda (r a) (tag (make-from-mag-ang r a))))
+  (put 'real-part '(complex) real-part)
+  (put 'imag-part '(complex) imag-part)
+  (put 'magnitude '(complex) magnitude)
+  (put 'angle '(complex) angle)
   'done)
 
 (define (make-complex-from-real-imag x y)
   ((get 'make-from-real-imag 'complex) x y))
 (define (make-complex-from-mag-ang r a)
   ((get 'make-from-mag-ang 'complex) r a))
+
+
+
+
+
+
+
+
 
 
 
