@@ -289,14 +289,7 @@
 
 
 
-
-
-;a)exp过程定义在scheme-number包中,数据都是scheme可以进行,但都是complex时则会发生无限递归
-;找不到方法---->强转---->强转后和之前一样---->继续找不到---->继续强转
-
-;b)没有解决
-
-;c)
+#|
 (define (apply-generic op . args)
   (let([type-tags (map type-tag args)])
     (let([proc (get op type-tags)])
@@ -318,39 +311,65 @@
                          (else
                           (error "No methods for these types" (list op type-tags)))))))
              (error "No methods for these types" (list op type-tags)))))))
+|#
+
+(define (indenity x) x)
+
+(define (apply-generic op . args)
+
+  ;根据已有标记对标记列表进行迭代查找强转过程,找到则将其放置于结果集构建的列表中,
+  ;迭代过程中如果出现无法强转的情况则返回false或null,(这里两种情况，为false和null影响到下一步判断,这里采用null,下一步比较长度确定是否能全强转)
+  ;如果一直到最后都能进行强转，则返回所有强转过程结果集
+  (define (iter tags tag result)
+    (if(null? tags)
+       result
+       (let([cur-tag (car tags)])
+         (if(eq? cur-tag tag)
+            (cons indenity (iter (cdr tags) result))
+            (let([t1->t2 (get-coercion cur-tag tag)])
+              (if t1->t2
+                  (cons t1->t2 (iter (cdr tags result)))
+                  null))))))
+  #|
+依次将参数表中所有参数依次进行强转,若其他所有参数转化当前参数类型,则返回强转过程列表(遇到相同类型已在过程列表中放入相应过程)
+若参数表中其他参数无法全部转化为当前参数类型，则对下一个参数进行该操作，
+若参数表为空则证明参数列表中所有参数无法统一强转为已有类型，这种情况下表明没有相应过程返回初始结果（这里为null）
+|#
+  (define args-type-tags (map type-tag args))
+  (define (iter-args args)
+     (if(null? args)
+         null
+         (let ([current-tag (type args)])
+           (let ([result (iter args-type-tags current-tag null)])
+             (if(= (length result) (length args-type-tags))
+                result
+                (iter-args (cdr args)))))))
+  
+  (let([tape-tags (map type-tag args)])
+    (let([proc (get op type-tags)])
+      (if proc
+          (apply proc (map contents args))
+          (if(>= (length args) 2)
+             ()
+             (error "No methods for these types" (list op type-tags)))))))
 
 
-(define (scheme-number->scheme-number n) n)
-(define (complex->complex z) z)
-
-(put-coercion 'scheme-number
-              'scheme-number
-              scheme-number->scheme-number)
-(put-coercion 'complex 'complex complex->complex)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(let([type1 (car type-tags)]
+     [type2 (cadr type-tags)])
+  (if(equal? type1 type2)
+     (error "No methods for these types" (list op type-tags))
+     (let([t1->t2 (get-coercion type1 type2)]
+          [t2->t1 (get-coercion type2 type1)]
+          [a1 (car args)]
+          [a2 (cadr args)])
+       (cond(t1->t2
+             (apply-generic op (t1->t2 a1) a2))
+            (t2->t1
+             (apply-generic op a1 (t2->t1 a2)))
+            (else
+             (error "No methods for these types" (list op type-tags)))))))
 
 
 

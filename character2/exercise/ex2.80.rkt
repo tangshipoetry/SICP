@@ -1,5 +1,69 @@
 #lang racket
 
+(define (set-cdr! pair value)
+  (cons (car pair)
+        value))
+
+(define (make-table)
+  (let ([local-table (list '*table*)])
+    (define (lookup key-1 key-2)
+      (let([subtable (assoc key-1 (cdr local-table))])
+        (if subtable
+            (let ([record (assoc key-2 (cdr subtable))])
+              (if record
+                  (cdr record)
+                  #f))
+            #f)))
+    (define (insert! key-1 key-2 value)
+      (let ([subtable (assoc key-1 (cdr local-table))])
+        (if subtable
+            (let ([record (assoc key-2 (cdr subtable))])
+              (if record
+                  (set-cdr! record value)
+                  (set-cdr! subtable
+                            (cons (cons key-2 value)
+                                  (cdr subtable)))))
+            (set-cdr! local-table
+                      (cons (list key-1
+                                  (cons (key-2 value)))
+                            (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond((eq? m 'lookup-proc) lookup)
+           ((eq? m 'insert-proc) insert!)
+           (else (error "Unknow operation-----TABLE" m))))
+    dispatch))
+
+
+(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc))
+
+;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------
+(define (gcd a b)
+  (if(= b 0)
+     a
+     (gcd b
+          (remainder a
+                     b))))
+
+;求平方值
+(define (square x)(* x x))
+;求平方根
+(define (sqrt-iter guess x)
+  (if (good-enough? guess x)
+      guess
+      (sqrt-iter (improve guess x) x)))
+;改进方法
+(define (improve guess x)
+  (average (/ x guess) guess))
+(define (average x y)(/ (+ x y) 2.0))
+;判断当前值是否足够好
+(define (good-enough? guess x)
+ (< (abs (- (square guess) x)) 0.0000001))
+
+;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------;---------
+
 (define (attach-tag data-tag contents)
   (if(number? contents)
      contents
@@ -17,16 +81,6 @@
      (if(pair? datum)
         (cdr datum)
         (error "bad tagged datum" datum))))
-
-(define (gcd a b)
-  (if(= b 0)
-     a
-     (gcd b
-          (remainder a
-                     b))))
-
-(define (square x)(expt x 2))
-
 
 (define (apply-generic op . args)
   (let((type-tags (map type-tag args)))
@@ -57,11 +111,11 @@
   (define (tag x) (attach-tag 'rectangular x))
   (put 'real-part '(rectangular) real-part)
   (put 'imag-part '(rectangular) imag-part)
-  (put 'magnitude '(rectangular) manitude)
-  (put 'angle (rectangular) angle)
+  (put 'magnitude '(rectangular) magnitude)
+  (put 'angle '(rectangular) angle)
   (put 'make-from-real-imag 'rectangular
        (lambda(x y)(tag (make-from-rreal-imag x y))))
-  (define 'make-from-mag-ang 'rectangular
+  (put 'make-from-mag-ang 'rectangular
     (lambda(r a)(tag (make-from-mag-ang r a))))
   'done)
 
