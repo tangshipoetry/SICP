@@ -180,6 +180,10 @@
        (lambda(x y)(= x y)))
   (put zero? 'scheme-number
        (lambda(x)(= x 0)))
+  ;------------------------------------------------------------------------------------------------------------------------------------------------
+  (put 'raise 'scheme-number
+       (lambda(x)(make-ration x 1)))
+  ;------------------------------------------------------------------------------------------------------------------------------------------------
   'done)
 
 (define (make-scheme-number n)
@@ -224,6 +228,10 @@
             (* (numer y) (denom x)))))
   (put zero? 'rational
        (lambda(x)(= 0 (numer x))))
+;------------------------------------------------------------------------------------------------------------------------------------------------
+  (put 'raise 'rational
+       (lambda(x)(make-complex-from-real-imag x 0)))
+;------------------------------------------------------------------------------------------------------------------------------------------------
   'done)
 
 (define (make-ration n d)
@@ -288,6 +296,18 @@
   (apply-generic zero? x))
 
 
+(define (scheme-number->scheme-number n) n)
+(define (complex->complex z) z)
+
+(put-coercion 'scheme-number
+              'scheme-number
+              scheme-number->scheme-number)
+(put-coercion 'complex 'complex complex->complex)
+
+
+(define (raise x)
+  (apply-generic 'raise x))
+
 
 #|
 (define (apply-generic op . args)
@@ -298,7 +318,7 @@
           (if(= (length args) 2)
              (let([type1 (car type-tags)]
                   [type2 (cadr type-tags)])
-               (if(equal?type1 type2)
+               (if(equal? type1 type2)
                   (error "No methods for these types" (list op type-tags))
                   (let([t1->t2 (get-coercion type1 type2)]
                        [t2->t1 (get-coercion type2 type1)]
@@ -313,70 +333,36 @@
              (error "No methods for these types" (list op type-tags)))))))
 |#
 
-(define (indenity x) x)
+
 
 (define (apply-generic op . args)
-
-  ;递归
-  ;根据已有标记对标记列表进行迭代查找强转过程,找到则将其放置于结果集构建的列表中,
-  ;迭代过程中如果出现无法强转的情况则返回false或null,(这里两种情况，为false和null影响到下一步判断,这里采用null,下一步比较长度确定是否能全强转)
-  ;如果一直到最后都能进行强转，则返回所有强转过程结果集
-  (define (iter tags tag result)
-    (if(null? tags)
-       result
-       (let([cur-tag (car tags)])
-         (if(eq? cur-tag tag)
-            (cons indenity (iter (cdr tags) result))
-            (let([t1->t2 (get-coercion cur-tag tag)])
-              (if t1->t2
-                  (cons t1->t2 (iter (cdr tags result)))
-                  null))))))   
-
-  #|
-;迭代,这里的结果需要反转
-  (define (iter tags tag result)
-    (if(null? tags)
-       result
-       (let([cur-tag (car tags)])
-         (if(eq? cur-tag tag)
-            (iter (cdr tags) (cons identity result))
-            (let([t1->t2 (get-coercion cur-tag tag)])
-              (if t1->t2
-                  (iter (cdr tags) (cons t1->t2 result))
-                  null))))))
-
-
-思路：直接构造和参数列表长度一样的某一参数标记的列表 执行(apply-generic op (list tags...))
-|#
-
-
-  
-  
-  #|
-依次将参数表中所有参数依次进行强转,若其他所有参数转化当前参数类型,则返回强转过程列表(遇到相同类型已在过程列表中放入相应过程)
-若参数表中其他参数无法全部转化为当前参数类型，则对下一个参数进行该操作，
-若参数表为空则证明参数列表中所有参数无法统一强转为已有类型，这种情况下表明没有相应过程返回初始结果（这里为null）
-|#
-  (define args-type-tags (map type-tag args))
-  (define (iter-args args)
-     (if(null? args)
-         null
-         (let ([current-tag (type args)])
-           (let ([result (iter args-type-tags current-tag null)])
-             (if(= (length result) (length args-type-tags))
-                result
-                (iter-args (cdr args)))))))
-  
-  (let([tape-tags (map type-tag args)])
+  ;如果存在,将前一个数迭代提升到后一个数的类型,过程中不存在不存在返回false
+  (define (iter-rise a b)
+    (define (same-type? a b)
+      (let([tpye-a (type-tag a)][type-b (type-tag b)])
+        (eq? a b)))
+    (let([proc (raise a)])
+      (if proc
+          (let([raised-a (proc a)])
+            (if(same-type? raised-a b)
+               raised-a
+               (iter-rise raised-a b)))
+          #f)))
+  (let([type-tags (map type-tag args)])
     (let([proc (get op type-tags)])
       (if proc
           (apply proc (map contents args))
-          (if(>= (length args) 2)
-             (let([result (iter-args args)])
-               (if(null? result)
-                  (error "No methods for these types" (list op type-tags))
-                 (apply-generic op (map result args))))
+          (if(= (length args) 2)
+             (let([a1 (car args)][a2 (cadr args)])
+               (let([raised-a1 (iter-rise a1 a2)][raised-a2 (a2 a1)])
+                 (cond (raised-a1 (apply-generic op raised-a1 a2))
+                       (raised-a2 (apply-generic op a1 raised-a2))
+                       (else (error "No methods for these types" (list op type-tags))))))
              (error "No methods for these types" (list op type-tags)))))))
+
+
+
+
 
 
 
