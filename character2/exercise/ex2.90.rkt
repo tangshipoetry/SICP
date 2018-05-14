@@ -380,6 +380,7 @@
 
 ;多项式安装包
 (define (install-polynomial-package)
+  ;
   (define (add-terms L1 L2)
     (cond((empty-termlist? L1) L2)
          ((empty-termlist? L2) L1)
@@ -482,9 +483,22 @@
 
 
 
+(define (install-dense-terms)
+  (define (first-term term-list) 
+    (make-term (- (len term-list) 1) (car term-list)))
+  (define (adjoin-term term term-list) 
+    (cond ((=zero? term) term-list) 
+          ((=equ? (order term) (length term-list)) (cons (coeff term) term-list)) 
+          (else (adjoin-term term (cons 0 term-list))))))
 
 
 
+
+(define (install-sparse-terms)
+  (define (first-term term-list)
+    ())
+  (define (adjoin-terms term term-list)
+    ()))
 
 
 
