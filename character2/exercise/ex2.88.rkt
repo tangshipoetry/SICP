@@ -148,7 +148,6 @@
        (lambda(x)(= x 0)))
   (put 'raise 'scheme-number
        (lambda(x)(make-ration x 1)))
-  
   (put 'sine 'scheme-number
        (lambda(x)(tag (sin x))))
   (put 'cosine 'scheme-number
@@ -157,6 +156,8 @@
        (lambda (x) (tag (atan x))))
   (put 'ex '(scheme-number)
        (lambda(x e)(tag (exp x e))))
+  (put 'get-negtive 'scheme-number
+       (lambda(x)(tag (- x))))
   'done)
 #|
 (define (make-scheme-number n)
@@ -214,6 +215,8 @@
        (lambda (x) (tag (atan (/ (numer x) (denom x))))))
   (put 'ex '(rational)
        (lambda(x e)(tag (exp (/ (numer x) (denom x)) (/ (numer e) (denom e))))))
+  (put 'get-negtive ''rational
+       (lambda(x)(make-rational (get-negtive (numer rat)) (denom rat))))
   'done)
 #|
 (define (make-ration n d)
@@ -245,7 +248,6 @@
        (lambda(x y)(tag (make-from-rreal-imag x y))))
   (put 'make-from-mag-ang 'rectangular
     (lambda(r a)(tag (make-from-mag-ang r a))))
-  
   'done)
 
 ;极坐标复数包
@@ -334,6 +336,10 @@
   (put 'project 'complex
        (lambda(x)(real-part x)))
 
+  (put 'get-negtive 'complex
+       (lambda(x)(make-complex-from-real-imag (get-negtive real-part)
+                                              (get-negtive imag-part))))
+
   'done)
 
 (define (make-complex-from-real-imag x y)
@@ -397,6 +403,16 @@
                   (add-terms (term-list p1)
                              (term-list p2)))
        (error "Polys not in same var -- ADD-POLY" (list p1 p2))))
+
+  
+  
+  (define (sub-poly p1 p2)
+    (if(same-variable? (variable p1) (variable p2))
+       (make-poly (variable p1)
+                  (add-terms (term-list p1)
+                             (term-list p2)))
+       (error "Polys not in same var -- ADD-POLY" (list p1 p2))))
+  
   (define (mul-poly p1 p2)
     (if(same-variable? (variable p1) (variable p2))
        (make-poly (variable p2)
@@ -415,6 +431,8 @@
   (define (zero-poly? term-coeff)
     (zero-terms? (term-list term-coeff)))
 
+  (define (sub-poly p)
+    ())
   (put 'add '(polynomial polynomial)
        (lambda(p1 p2)(tag (add-poly p1 p2))))
   (put 'mul '(polynomial polynomial)
@@ -423,6 +441,7 @@
        (lambda(var terms)(tag (make-poly var terms))))
   (put '=zero? 'polynomial
        zero-poly?)
+  
   'done)
 
 (define (add-terms L1 L2)
@@ -454,21 +473,6 @@
         (make-term (+ (order t1)(order t2))
                    (mul (coeff t1) (coeff t2)))
         (mul-term-by-all-terms t1 (rest-terms L))))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

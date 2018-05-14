@@ -144,7 +144,7 @@
        (lambda(x) (tag x)))
   (put 'equ? '(scheme-number scheme-number)
        (lambda(x y)(= x y)))
-  (put '=zero? 'scheme-number
+  (put 'zero? 'scheme-number
        (lambda(x)(= x 0)))
   (put 'raise 'scheme-number
        (lambda(x)(make-ration x 1)))
@@ -200,7 +200,7 @@
        (lambda(x y)
          (= (* (numer x) (denom y))
             (* (numer y) (denom x)))))
-  (put '=zero? 'rational
+  (put 'zero? 'rational
        (lambda(x)(= 0 (numer x))))
   (put 'raise 'rational
        (lambda(x)(make-complex-from-real-imag x 0)))
@@ -384,6 +384,7 @@
 (define (order term)(car term))
 (define (coeff term)(cadr term))
 
+
 ;多项式安装包
 (define (install-polynomial-package)
   (define (make-poly variable term-list)
@@ -404,25 +405,12 @@
                              (term-list p2)))
        (error "Polys not in same var -- AMUL-POLY" (list p1 p2))))
   (define (tag p) (attach-tag 'polynomial p))
-  (define (poly? x)
-    (eq? 'polynomial (type-tag x)))
-
-  (define (zero-terms? termlist) 
-    (or (empty-termlist? termlist) 
-        (and (=zero? (coeff (first-term termlist))) 
-             (zero-terms? (rest-terms termlist)))))
-  
-  (define (zero-poly? term-coeff)
-    (zero-terms? (term-list term-coeff)))
-
   (put 'add '(polynomial polynomial)
        (lambda(p1 p2)(tag (add-poly p1 p2))))
   (put 'mul '(polynomial polynomial)
        (lambda(p1 p2)(tag (mul-poly p1 p2))))
   (put 'make 'polynomial
        (lambda(var terms)(tag (make-poly var terms))))
-  (put '=zero? 'polynomial
-       zero-poly?)
   'done)
 
 (define (add-terms L1 L2)
