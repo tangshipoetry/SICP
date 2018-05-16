@@ -378,10 +378,270 @@
 (define (same-variable? v1 v2)
   (and (variable? v1) (variable? v2) (eq? v1 v2)))
 
-;这里分开实现,网上答案看不明白
+;多项式安装包
+(define (install-polynomial-package)
+  (define (add-terms L1 L2)
+    (cond((empty-termlist? L1) L2)
+         ((empty-termlist? L2) L1)
+         (else
+          (let([t1 (first-term L1)][t2 (first-term L2)])
+            (cond((> (order t1) (order t2))
+                  (adjoin-term t1 (add-terms (rest-terms L1) L2)))
+                 ((< (order t1) (order t2))
+                  (adjoin-term t2 (add-terms L1 (rest-terms L2))))
+                 (else
+                  (adjoin-term
+                   (make-term (order t1)
+                              (add (coeff t1) (coeff t2)))
+                   (add-terms (rest-terms L1)
+                              (rest-terms L2)))))))))
+
+  (define (mul-terms L1 L2)
+    (if(empty-termlist? L1)
+       (the-empty-termlist)
+       (add-terms (mul-term-by-all-terms (first-term L1) L2)
+                  (mul-terms (rest-terms L1) L2))))
+  (define (mul-term-by-all-terms t1 L)
+    (if(empty-termlist? L)
+       (the-empty-termlist)
+       (let((t2 (first-term L)))
+         (adjoin-term
+          (make-term (+ (order t1)(order t2))
+                     (mul (coeff t1) (coeff t2)))
+          (mul-term-by-all-terms t1 (rest-terms L))))))
+  
+  
+  (define (make-poly variable term-list)
+    (cons variable term-list))
+  (define (variable p) (car p))
+  (define (term-list p) (cdr p))
+  
+  (define (add-poly p1 p2)
+    (if(same-variable? (variable p1) (variable p2))
+       (make-poly (variable p1)
+                  (add-terms (term-list p1)
+                             (term-list p2)))
+       (error "Polys not in same var -- ADD-POLY" (list p1 p2))))
+  (define (sub-poly p1 p2)
+    (add-poly p1 (get-negtive p2)))
+  (define (mul-poly p1 p2)
+    (if(same-variable? (variable p1) (variable p2))
+       (make-poly (variable p2)
+                  (mul-terms (term-list p1)
+                             (term-list p2)))
+       (error "Polys not in same var -- AMUL-POLY" (list p1 p2))))
+
+  (define (div poly1 poly2)
+    (if (same-variable? (variable poly1) (variable poly2))
+        (let([result (div (term-list poly1)
+                          (term-list poly2))]
+             [var (variable poly1)])
+          (list (make-poly var (car result))
+                (make-poly var (cadr result))))
+        (error "not the same variable" (list poly1 poly2))))
+  
+  (define (tag p) (attach-tag 'polynomial p))
+  (define (poly? x)
+    (eq? 'polynomial (type-tag x)))
+
+  (define (zero-terms? termlist) 
+    (or (empty-termlist? termlist) 
+        (and (=zero? (coeff (first-term termlist))) 
+             (zero-terms? (rest-terms termlist)))))
+  
+  (define (zero-poly? term-coeff)
+    (zero-terms? (term-list term-coeff)))
+  (define (get-negtive-terms termlist)
+    (if(empty-termlist? termlist)
+       (the-empty-termlist)
+       (let([t (first-term termlist)])
+         (adjoin-term (make-term (order termlist)
+                                 (get-negtive (coeff termlist)))
+                      (get-negtive-terms (rest termlist))))))
+  (define (get-negtive-poly x)
+    (make-poly (variable x)
+               (get-negtive-terms (term-list x))))
+
+  (define (make-polynomial var terms)
+    ((get 'make (type-tag terms)) var terms))
+  
+  (put 'add '(polynomial c)
+       (lambda(p1 p2)(tag (add-poly p1 p2))))
+  (put 'mul '(polynomial polynomial)
+       (lambda(p1 p2)(tag (mul-poly p1 p2))))
+  (put 'make 'polynomial
+       (lambda(var terms)(tag (make-poly var terms))))
+  (put '=zero? 'polynomial
+       zero-poly?)
+  (put 'get-negtive '(polynomial)
+       get-negtive-poly)
+  (put 'make '(polynomial)
+       (lambda(var terms)(tag (make-polynomial var terms))))
+  
+  'done)
+
+(define (make-polynomial var terms)
+  ((get 'make '(polynomial)) var terms))
 
 
 
+
+;空项相关——构造和判断
+(define (the-empty-termlist term-list)
+  (let([proc (get 'the-empty-termlist (type-tag term-list))])
+    (if proc
+        (proc)
+        (error "No proc found -- THE-EMPTY-TERMLIST" term-list))))
+(define (empty-termlist? term-list)
+  (let([proc (get 'empty-termlist? (type-tag term-list))])
+    (if proc
+        (proc term-list)
+        (error "-- EMPTY-TERMLIST?" term-list))))
+
+;多项式中的单个项——次幂和系数
+(define (make-term order coeff)
+  (list order coeff))
+(define (order term) 
+  (if (pair? term) 
+      (car term) 
+      (error "Term not pair -- ORDER" term))) 
+(define (coeff term) 
+  (if (pair? term) 
+      (cadr term) 
+      (error "Term not pair -- COEFF" term)))
+
+;获取项表中除第一项之外的其他项
+(define (rest-terms term-list)
+  (let([proc (get 'rest-terms (type-tag term-list))])
+    (if proc
+        (proc term-list)
+        (error "-- REST-TERMS" term-list))))
+
+;获取项表中第一项
+(define (first-term term-list)
+  (let([proc (get 'first-term (type-tag term-list))])
+    (if proc
+        (proc term-list)
+        (error "No first-term for this list -- FIRST-TERM" term-list))))
+
+;新项插入辅助过程
+(define (add-zeros x)
+  (if(= 0 x)
+     '()
+     (cons 0 (add-zeros (- x 1)))))
+
+(define (zero-pad x type)
+  (if(eq? type 'sparse)
+     '()
+     (if(= x 0)
+        '()
+        (add-zeros x))))
+;在表中插入一个新的项
+(define (adjoin-term term term-list)
+  (let([preped-term ((get 'prep-term (type-tag term-list)) term)]
+       [preped-first-term ((get 'prep-term (type-tag term-list))
+                           (first-term term-list))])
+    (cond((=zero? (coeff term)) term-list)
+         ((empty-termlist? term-list)(append (the-empty-termlist term-list)
+                                             preped-term
+                                             (zero-pad (order term-list))))
+         ((> (order term) (order (first-term term-list)))
+          (append (list (car term-list))
+                  preped-term
+                  (zero-pad (- (- (order term)
+                               (order (first-term term-list)))
+                               1) 
+                            (car term-list))
+                  term-list))
+         (else
+          (append (list (car term-list));答案没有,我觉得应该有
+                  preped-first-term
+                  (adjoin-term term (rest-terms term-list)))))))
+
+(define (install-polynomial-term-package)
+  ;提取项表中第一项
+  (define (first-term-dense term-list)
+    (if(empty-termlist? term-list)
+       '()
+       (list
+        (- (length (cdr term-list)) 1)
+        (car (cdr term-list)))))
+  (define (first-term-sparse term-list)
+    (if(empty-termlist? term-list)
+       '()
+       (cadr term-list)))
+  ;将要加到项表中的项进行合适处理
+  (define (prep-term-dense term)
+    (if(null? term)
+       '()
+       (cdr term)))
+  (define (prep-term-sparse term)
+    (if(null? term)
+       '()
+       (list term)))
+  ;不同的空项表
+  (define (the-empty-termlist-dense) '(dense)) 
+  (define (the-empty-termlist-sparse) '(sparse))
+  ;提取项表中除去第一个外其他的项表
+  (define (rest-terms term-list)
+    (if(<= (length term-list) 1)
+       (error "No-rest-terms" term-list)
+       (cons (type-tag term-list) (cddr term-list))))
+  ;判断项表是否为空
+  (define (empty-termlist? term-list)
+    (if(pair? term-list)
+       (>= 1 (length term-list))
+       (error "Term-list not pair -- EMPTY-TERMLIST?" term-list)))
+  ;构造多项式
+  (define (make-polynomial-dense var terms)
+    (make-polynomial var (cons 'dense (map cadr terms))));????这个map无法理解,此时的terms到底是什么
+  (define (make-polynomial-sparse var terms)
+    (make-polynomial var (cons 'sparse terms)))
+  (put 'first-term 'sparse  
+       (lambda (term-list) (first-term-sparse term-list))) 
+  (put 'first-term 'dense 
+       (lambda (term-list) (first-term-dense term-list))) 
+  (put 'prep-term 'dense 
+       (lambda (term) (prep-term-dense term))) 
+  (put 'prep-term 'sparse 
+       (lambda (term) (prep-term-sparse term))) 
+  (put 'rest-terms 'dense 
+       (lambda (term-list) (rest-terms term-list))) 
+  (put 'rest-terms 'sparse 
+       (lambda (term-list) (rest-terms term-list))) 
+  (put 'empty-termlist? 'dense 
+       (lambda (term-list) (empty-termlist? term-list))) 
+  (put 'empty-termlist? 'sparse 
+       (lambda (term-list) (empty-termlist? term-list))) 
+  (put 'the-empty-termlist 'dense 
+       (lambda () (the-empty-termlist-dense))) 
+  (put 'the-empty-termlist 'sparse 
+       (lambda () (the-empty-termlist-sparse))) 
+  (put 'make-polynomial 'sparse 
+       (lambda (var terms) (make-polynomial-sparse var terms))) 
+  (put 'make-polynomial 'dense 
+       (lambda (var terms) (make-polynomial-dense var terms)))
+
+  'done)
+
+(define (div-terms L1 L2)
+  (if(empty-termlist? L1)
+     (list (the-empty-termlist) (the-empty-termlist))
+     (let([t1 (first-term L1)]
+          [t2 (first-term L2)])
+       (if(> (order t2) (order t1))
+          (list (the-empty-termlist) L1)
+          (let([new-c (div (coeff t1) (coeff t2))]
+               [new-o (- (order t1) (order t2))])
+            (let([rest-of-result (div-terms
+                                  (sub-terms L1
+                                             (mul-terms
+                                              (list (make-term new-o new-c))
+                                              L2))
+                                  L2)])
+              (list (adjoin-term new-t
+                                 (car rest-of-result))
+                    (cadr rest-of-result))))))))
 
 
 

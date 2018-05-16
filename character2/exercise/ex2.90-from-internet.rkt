@@ -493,7 +493,7 @@
        (error "Term-list not pair -- EMPTY-TERMLIST?" term-list)))
   ;构造多项式
   (define (make-polynomial-dense var terms)
-    (make-polynomial var (cons 'dense (map cadr terms))));????这个map无法理解，此时的terms到底是什么
+    (make-polynomial var (cons 'dense (map cadr terms))));terms是将make-term输出用列表安排,所以有这里的map操作
   (define (make-polynomial-sparse var terms)
     (make-polynomial var (cons 'sparse terms)))
   (put 'first-term 'sparse  
@@ -631,14 +631,13 @@
   
   'done)
 
+(define (make-polynomial var terms)
+  ((get 'make '(polynomial)) var terms))
 
 
+;目前基本理解，但是，个人觉得有一点问题，个人觉得添加标记应该在对外接口的时候进行,此外应该将dense和sparse分两个包
 
-
-
-
-
-
+;此外按照书本例子，个人觉得应该是分dense和sparse两个包实现，每个里面提供另一个的选择和构造过程——但是实际实现有问题，是转化还是其他操作暂不明了
 
 
 
