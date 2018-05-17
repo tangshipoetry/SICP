@@ -1,0 +1,6 @@
+#lang racket
+#|(define (map p items)
+  (if(null? items)
+     null
+     (cons (p (car items))
+           (map p \(cdr items)))))|#
