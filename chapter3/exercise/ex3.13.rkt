@@ -1,46 +1,41 @@
 #lang sicp
 
-(define (mystery x)
-  (define (loop x y)
-    (if(null? x)
-       y
-       (let([temp (cdr x)])
-         (set-cdr! x y)
-         (loop temp x))))
-  (loop x '()))
+(define (last-pair x)
+  (if(null? (cdr x))
+     x
+     (last-pair (cdr x))))
+
+(define (make-cycle x)
+  (set-cdr! (last-pair x) x)
+  x)
 
 
+(define x (list 'a 'b 'c))
 
+(define z (make-cycle x))
 
-(define v (list 'a 'b 'c 'd))
-
-(define w (mystery v))
-
-
-
-
-
-
-
-
-
-;反转reverse
 
 #|
-
-v --> [*]----> [*]----> [*]----> '()
-       |        |        |
-       v        v        v
-       'a       'b       'c
-
-v------------------------+
-                         |
-                         v
-w --> [*]----> [*]----> [*]----> '()
-       |        |        |
-       v        v        v
-       'c       'b       'a
+;  ,-------------------,
+;  |                   |
+;  v                   |
+; ( . ) -> ( . ) -> ( . )
+;  |        |        |
+;  v        v        v
+;  'a       'b       'c
 |#
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
