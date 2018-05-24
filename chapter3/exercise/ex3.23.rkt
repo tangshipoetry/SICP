@@ -1,6 +1,9 @@
 #lang sicp
 
 #|
+
+|#
+
 ;自己写的
 
 (define (cons-item prv-item-ptr item)
@@ -93,7 +96,6 @@
 (front-delete-deque! dq)
 ;(dqprint dq)
 (rear-deletedeque! dq)
-|#
 
 
 
@@ -106,6 +108,7 @@
  ;;; Which will display this in the repl of guile scheme 
  ;;; ((a) (b . #-2#) (c . #-2#)) 
   
+#|
 (define (make-deque) 
   (let ((front-ptr '()) 
         (rear-ptr '())) 
@@ -189,5 +192,6 @@
 (define (print-deque deque) 
   (display (map car 
                 (front-ptr deque))) (newline)) 
+|#
 
 
