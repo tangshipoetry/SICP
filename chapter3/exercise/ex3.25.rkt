@@ -1,13 +1,7 @@
 #lang sicp
-
-
-
-(define (make-table same-key?)
+#|
+(define (make-table)
   (let([local-table (list '*table*)])
-    (define (assoc key records)
-      (cond((null? records) #f)
-           ((same-key? key (caar records)) (car records))
-           (else (assoc key (cdr records)))))
     (define (lookup key1 key2)
       (let([subtable
             (assoc key1 (cdr local-table))])
@@ -37,13 +31,29 @@
            (else
             (error "Unknown operation: TABLE" m))))
     dispatch))
+|#
+(define (assoc key records)
+      (cond((null? records) #f)
+           ((equal? key (caar records)) (car records))
+           (else (assoc key (cdr records)))))
 
 
+(define (make-list)
+  (define local-table (list '*table*))
+  (define (iter-search keylist t)
+    (cond((null? t) #f)
+         ((assoc (car keylist) t)
+          (let ([subtable (assoc (car keylist) t)])
+            (if(= 1 keylist)
+             (cdr subtable)
+             (iter-search (cdr keylist) subtable))))
+         (else #f)))
+  (define (lookup keylist)
+    (iter-search keylist local-table))
 
-
-
-
-
+  (define (iter-insert! keylist value t)
+    (cond((null? t) ())
+         (()))))
 
 
 
