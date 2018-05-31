@@ -1,5 +1,6 @@
 #lang sicp
 
+
 ;用特定过程调用除特定项之外的其他约束列表中的各项
 (define (for-each-except exception procedure list)
   (define (loop items)
@@ -166,44 +167,50 @@
   (connect sum me)
   me)
 
+(define (sqrt x)
+  (expt x 0.5))
+(define (square x)
+  (* x x))
 
-(define (celsius-fahrenheit-converter c f)
-  (let ((u (make-connector))
-        (v (make-connector))
-        (w (make-connector))
-        (x (make-connector))
-        (y (make-connector)))
-    (multiplier c w u)
-    (multiplier v x u)
-    (adder v y f)
-    (constant 9 w)
-    (constant 5 x)
-    (constant 32 y)
-    'ok))
-
-
-(define A (make-connector))
-(define B (make-connector))
-(define C (make-connector))
-(define N (make-connector))
-
-(probe "Adder1:" A)
-(probe "ADDER2:" B)
-(probe "average:" C)
-
-(set-value! A 25 'user)
-(set-value! B 15 'user)
-
-(define (aver a b c)
-  (define s (make-connector))
-  (define n (make-connector))
-  (adder a b s)
-  (multiplier c n s)
-  (constant 2 n)
-  'ok)
+(define (squarer a b)
+  (define (process-new-value)
+    (if (has-value? b)
+        (if (< (get-value b) 0)
+            (error "square less than 0: SQUARER"
+                   (get-value b))
+            (set-value! a
+                        (sqrt (get-value b))
+                        me))
+        (if(has-value? a)
+           (set-value! b
+                       (square (get-value a))
+                       me))))
+  (define (process-forget-value)
+    (forget-value! a me)
+    (forget-value! b me));squarer 只有两个连接器输入,因此在 process-forget-value 的最后,不必再调用 (process-new-value) ,否则就会出错
+  (define (me request)
+    (cond((eq? request 'I-have-a-value) (process-new-value))
+         ((eq? request 'I-lost-my-value) (process-forget-value))
+         (else (error "Unknown request: SQUARER"
+                      request))))
+  (connect a me)
+  (connect b me)
+  me)
 
 
-(aver A B C)
+
+(define a (make-connector))
+(define b (make-connector))
+(probe "square-root" a)
+(probe "square" b)
+(squarer a b)
+(set-value! a 2 'user)
+
+
+(forget-value! a 'user)
+
+
+
 
 
 

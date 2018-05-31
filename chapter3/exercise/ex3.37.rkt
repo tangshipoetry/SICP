@@ -167,43 +167,73 @@
   me)
 
 
-(define (celsius-fahrenheit-converter c f)
-  (let ((u (make-connector))
-        (v (make-connector))
-        (w (make-connector))
-        (x (make-connector))
-        (y (make-connector)))
-    (multiplier c w u)
-    (multiplier v x u)
-    (adder v y f)
-    (constant 9 w)
-    (constant 5 x)
-    (constant 32 y)
-    'ok))
+(define (c+ x y)
+  (let ((z (make-connector)))
+    (adder x y z)
+    z))
+
+(define (c* x y)
+  (let ((z (make-connector)))
+    (multiplier x y z)
+    z))
+
+(define (c/ x y)
+  (let ((z (make-connector)))
+    (multiplier z y x)
+    z))
+
+(define (c- x y)
+  (let ((z (make-connector)))
+    (adder z y x)
+    z))
+
+(define (cv x)
+  (let ((z (make-connector)))
+    (constant x z)
+    z))
 
 
-(define A (make-connector))
-(define B (make-connector))
+(define (celsius-fahrenheit-converter x)
+  (c+ (c* (c/ (cv 9) (cv 5))
+          x)
+      (cv 32)))
 (define C (make-connector))
-(define N (make-connector))
+(define F (celsius-fahrenheit-converter C))
 
-(probe "Adder1:" A)
-(probe "ADDER2:" B)
-(probe "average:" C)
-
-(set-value! A 25 'user)
-(set-value! B 15 'user)
-
-(define (aver a b c)
-  (define s (make-connector))
-  (define n (make-connector))
-  (adder a b s)
-  (multiplier c n s)
-  (constant 2 n)
-  'ok)
+(probe "celsius:" C)
+(probe "fahrenheit" F)
+(set-value! C 25 'user)
 
 
-(aver A B C)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
