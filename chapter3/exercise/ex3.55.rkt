@@ -1,5 +1,6 @@
 #lang racket
 
+
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -68,8 +69,33 @@
 ;隐式流相关
 (define (add-streams s1 s2)
   (stream-map + s1 s2))
-;s 产生的序列是 1,2,4,8,16,...,2n :
-(define s (cons-stream 1 (add-streams s s)))
+(define (scale-stream stream factor)
+  (stream-map (lambda(x)(* x factor))
+              stream))
+
+
+(define (mul-streams s1 s2)
+  (stream-map * s1 s2))
+
+(define (integers-starting-from n)
+  (cons-stream n (integers-starting-from (+ n 1))))
+(define integers (integers-starting-from 1))
+
+;阶乘定义
+(define factorials
+  (cons-stream 1
+               (mul-streams
+                factorials
+                (integers-starting-from 2))))
+
+
+(define (partial-sums stream)
+  (cons-stream
+   (stream-car stream)
+   (add-streams (partial-sums stream)
+                (stream-cdr stream))))
+
+(define s (partial-sums integers))
 
 
 

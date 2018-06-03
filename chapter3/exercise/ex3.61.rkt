@@ -1,5 +1,6 @@
 #lang racket
 
+
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -64,23 +65,57 @@
               (cons proc (map stream-cdr argstreams))))))
 
 
-
-;隐式流相关
 (define (add-streams s1 s2)
   (stream-map + s1 s2))
-;s 产生的序列是 1,2,4,8,16,...,2n :
-(define s (cons-stream 1 (add-streams s s)))
+(define (scale-stream stream factor)
+  (stream-map (lambda(x)(* x factor))
+              stream))
+(define (mul-streams s1 s2)
+  (stream-map * s1 s2))
+(define (partial-sums stream)
+  (cons-stream
+   (stream-car stream)
+   (add-streams (partial-sums stream)
+                (stream-cdr stream))))
+
+(define (integers-starting-from n)
+  (cons-stream n (integers-starting-from (+ n 1))))
+(define integers (integers-starting-from 1))
 
 
+(define (reciprocal x)
+  (/ 1 x))
+(define reciprocal-integers
+  (stream-map reciprocal integers))
+
+(define (integrate-series stream)
+  (stream-map * stream reciprocal-integers))
+
+(define exp-series
+  (cons-stream 1 (integrate-series exp-series)))
 
 
+(define sine-series (cons-stream 0 (integrate-series cosine-series)))
+(define cosine-series (cons-stream 1 (integrate-series (scale-stream sine-series -1))))
 
 
+(define (mul-series s1 s2)
+  (cons-stream
+   (* (stream-car s1) (stream-car s2))
+   (add-streams (scale-stream (stream-cdr s2) (stream-car s1))
+                (mul-series (stream-cdr s1) s2))))
 
+;自己写的
+(define (invertunit-series stream)
+  (cons-stream (stream-car stream)
+               (scale-stream
+                (mul-series (stream-cdr stream)
+                            (invertunit-series stream))
+                -1)))
 
-
-
-
+;摘抄网上
+(define (reciprocal-series s)
+  (cons-stream 1 (scale-stream (mul-series (stream-cdr s) (reciprocal-series s)) -1)))
 
 
 

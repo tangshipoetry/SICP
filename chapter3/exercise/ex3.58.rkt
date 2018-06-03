@@ -1,5 +1,6 @@
 #lang racket
 
+
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -64,12 +65,40 @@
               (cons proc (map stream-cdr argstreams))))))
 
 
-
-;隐式流相关
 (define (add-streams s1 s2)
   (stream-map + s1 s2))
-;s 产生的序列是 1,2,4,8,16,...,2n :
-(define s (cons-stream 1 (add-streams s s)))
+(define (scale-stream stream factor)
+  (stream-map (lambda(x)(* x factor))
+              stream))
+
+
+(define (expand num den radix)
+  (cons-stream
+   (quotient (* num radix) den)
+   (expand (remainder (* num radix) den) den radix)))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -64,19 +64,33 @@
               (cons proc (map stream-cdr argstreams))))))
 
 
-
-;隐式流相关
 (define (add-streams s1 s2)
   (stream-map + s1 s2))
-;s 产生的序列是 1,2,4,8,16,...,2n :
-(define s (cons-stream 1 (add-streams s s)))
+(define (scale-stream stream factor)
+  (stream-map (lambda(x)(* x factor))
+              stream))
 
 
+(define (integers-starting-from n)
+  (cons-stream n (integers-starting-from (+ n 1))))
+(define integers (integers-starting-from 1))
 
 
+(define (reciprocal x)
+  (/ 1 x))
+(define reciprocal-integers
+  (stream-map reciprocal integers))
+
+(define (integrate-series stream)
+  (stream-map * stream reciprocal-integers))
+
+(define exp-series
+  (cons-stream 1 (integrate-series exp-series)))
 
 
-
+;摘抄自网上
+(define sine-series (cons-stream 0 (integrate-series cosine-series)))
+(define cosine-series (cons-stream 1 (integrate-series (scale-stream sine-series -1))))
 
 
 
