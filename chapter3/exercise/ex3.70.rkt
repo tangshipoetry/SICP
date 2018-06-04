@@ -1,5 +1,6 @@
 #lang racket
 
+
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -136,22 +137,13 @@
               (make-tableau transform s)))
 
 
-(define (divisible? x y)
-  (= (remainder x y) 0))
-(define (prime? n)
-  (define (iter guess)
-    (cond ((> (square guess) n) true)
-          ((divisible? n guess) false)
-          (else (iter (+ 1 guess))))) 
-  (iter 2))
-
-;序对无穷流
+;流穿插
 (define (interleave s1 s2)
   (if (stream-null? s1)
       s2
       (cons-stream (stream-car s1)
                    (interleave s2 (stream-cdr s1)))))
-
+;序对流
 (define (pairs s t)
   (cons-stream
    (list (stream-car s) (stream-car t))
@@ -160,20 +152,43 @@
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
 
-(define pa (pairs integers integers))
+(define (merge s1 s2)
+  (cond((stream-null? s1) s2)
+       ((stream-null? s2) s1)
+       (else
+        (let([s1car (stream-car s1)]
+             [s2car (stream-car s2)])
+          (cond((< s1car s2car)
+                (cons-stream s1car (merge (stream-cdr s1) s2)))
+               ((> s1car s2car)
+                (cons-stream s2car (merge s1 (stream-cdr s2))))
+               (else
+                (cons-stream s1car
+                             (merge (stream-cdr s1)
+                                    (stream-cdr s2)))))))))
 
-(define counter 0)
-(define (show-pair stream p)
-  (if(equal? p (stream-car stream))
-     (display counter)
-     (begin (set! counter (+ 1 counter))
-            (display (stream-car stream))
-            (newline)
-            (show-pair (stream-cdr stream) p))))
+(define (merge-weighted s1 s2 weight)
+  (cond((stream-null? s1) s2)
+       ((stream-null? s2) s1)
+       (else
+        (let([s1car (stream-car s1)]
+             [s2car (stream-car s2)])
+          (cond((< (weight s1car) (weight s2car))
+                (cons-stream s1car (merge-weighted (stream-cdr s1) s2 weight)))
+               ((> (weight s1car) (weight s2car))
+                (cons-stream s2car (merge-weighted s1 (stream-cdr s2) weight)))
+               (else
+                (cons-stream s1car
+                             (cons-stream s2car
+                                          (merge-weighted (stream-cdr s1)
+                                                          (stream-cdr s2)
+                                                          weight)))))))))
 
-;摘抄网上
-;(1,100):198
-;(100,100):2^100 - 1;
+
+
+
+
+
 
 
 

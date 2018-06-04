@@ -152,6 +152,7 @@
       (cons-stream (stream-car s1)
                    (interleave s2 (stream-cdr s1)))))
 
+#|
 (define (pairs s t)
   (cons-stream
    (list (stream-car s) (stream-car t))
@@ -159,8 +160,34 @@
     (stream-map (lambda (x) (list (stream-car s) x))
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
+|#
+
+
+
+#|
+;自己写的有问题
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (interleave
+     (stream-map (lambda (x) (list (stream-car s) x))
+                 (stream-cdr t))
+     (pairs (stream-cdr s) (stream-cdr t)))
+    (pairs (stream-cdr t) (stream-cdr s)))))
+|#
+
+;仿照网上思路
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (pairs (stream-cdr s) t))))
 
 (define pa (pairs integers integers))
+
 
 (define counter 0)
 (define (show-pair stream p)
@@ -171,9 +198,14 @@
             (newline)
             (show-pair (stream-cdr stream) p))))
 
-;摘抄网上
-;(1,100):198
-;(100,100):2^100 - 1;
+
+
+
+
+
+
+
+
 
 
 

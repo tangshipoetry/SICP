@@ -152,6 +152,7 @@
       (cons-stream (stream-car s1)
                    (interleave s2 (stream-cdr s1)))))
 
+#|
 (define (pairs s t)
   (cons-stream
    (list (stream-car s) (stream-car t))
@@ -159,6 +160,22 @@
     (stream-map (lambda (x) (list (stream-car s) x))
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
+|#
+
+;无限递归循环
+#|
+Louis' implementation will recurse infinitely simply because interleave is an ordinary *function*,
+ not a special form like cons-stream, and hence will need to fully evaluate both arguments first, since Scheme uses eager evaluation for ordinary functions.
+Since the second argument to interleave is a recursive call to pairs, and there is no hard-coded base case, this implementation will recurse infinitely.
+|#
+(define (pairs s t)
+  (interleave
+   (stream-map (lambda (x) (list (stream-car s) x))
+               t)
+   (pairs (stream-cdr s) (stream-cdr t))))
+
+
+
 
 (define pa (pairs integers integers))
 
@@ -171,9 +188,6 @@
             (newline)
             (show-pair (stream-cdr stream) p))))
 
-;摘抄网上
-;(1,100):198
-;(100,100):2^100 - 1;
 
 
 

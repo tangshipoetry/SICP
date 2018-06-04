@@ -1,5 +1,6 @@
 #lang racket
 
+
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -160,32 +161,76 @@
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
 
-(define pa (pairs integers integers))
 
-(define counter 0)
-(define (show-pair stream p)
-  (if(equal? p (stream-car stream))
-     (display counter)
-     (begin (set! counter (+ 1 counter))
-            (display (stream-car stream))
-            (newline)
-            (show-pair (stream-cdr stream) p))))
+;自己写的,在第五个宕机
+(define (triples S T U)
+  (let ([tu (pairs T U)])
+    (cons-stream
+     (cons (stream-car S) (stream-car tu))
+     (interleave
+      (stream-map (lambda(x)(cons (stream-car S) x))
+                  (stream-cdr tu))
+      (triples (stream-cdr  S) (stream-cdr T) (stream-cdr U))))))
 
-;摘抄网上
-;(1,100):198
-;(100,100):2^100 - 1;
+;下面是摘抄网上的，同样不行
+#|
+(define first-of-integer-pair 
+  (stream-map car (pairs integers integers))) 
+  
+(define (triples s t u) 
+  (let ((pairs-tu (pairs t u))) ;; compute pairs only *once* 
+    (define (rec si i ptu top-i) 
+      (cons-stream 
+       (cons (stream-car si) (stream-car ptu)) 
+       (if (= i (stream-car top-i)) 
+           (rec s 1 (stream-cdr ptu) (stream-cdr top-i)) 
+           ;; restart s cycle with next ptu 
+           (rec (stream-cdr si) (add1 i) ptu top-i)))) 
+    (rec s 1 pairs-tu first-of-integer-pair)))
+|#
+
+#|
+(define (triples s t u)
+  (cons-stream (list 
+                (stream-car s)
+                (stream-car t) 
+                (stream-car u))
+               (interleave
+                (stream-map (lambda (x) (cons (stream-car s) x))
+                            (stream-cdr (pairs t u)))
+                (triples (stream-cdr s)
+                         (stream-cdr t)
+                         (stream-cdr u)))))
+|#
 
 
 
 
+(define tri (triples integers integers integers))
+
+(define (squate x)(* x x))
+
+(define result (stream-filter (lambda(x)
+                                (= (+ (square (car x)) (square (cadr x)))
+                                   (squate (caddr x))))
+                              tri))
 
 
 
+(define (dieplay-stream stream)
+  (let([counter 5])
+    (define (iter stream)
+      (if(= 0 counter)
+         (display (stream-car stream))
+         (begin
+           (set! counter (- counter 1))
+          (display (stream-car stream))
+          (newline)
+          (iter (stream-cdr stream)))))
+    (iter stream)))
 
 
-
-
-
+(dieplay-stream result)
 
 
 

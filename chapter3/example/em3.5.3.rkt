@@ -146,7 +146,7 @@
   (define (iter guess)
     (cond ((> (square guess) n) true)
           ((divisible? n guess) false)
-          (else (iter (+ 1 guess)))))
+          (else (iter (+ 1 guess))))) 
   (iter 2))
 
 
@@ -156,6 +156,7 @@
       s2
       (cons-stream (stream-car s1)
                    (interleave s2 (stream-cdr s1)))))
+
 (define (pairs s t)
   (cons-stream
    (list (stream-car s) (stream-car t))
@@ -163,6 +164,7 @@
     (stream-map (lambda (x) (list (stream-car s) x))
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
+
 (stream-filter (lambda(pair)
                  (prime? (+ (car pair) (cadr pair))))
                (pairs integers integers))
