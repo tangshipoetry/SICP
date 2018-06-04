@@ -1,6 +1,5 @@
 #lang racket
 
-
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -232,26 +231,33 @@
           (iter (stream-cdr stream)))))
     (iter stream)))
 
-(define all-int-pair
+(define order-int-pair
   (weighted-pairs integers integers w))
 
-(define a
-  (stream-filter
-   (lambda(x)
-     (<= (car x) (cadr x)))
-   all-int-pair))
-(dieplay-stream a)
+
+(define (cube-weight x)
+  (+ (expt (car x) 3)
+     (expt (cadr x) 3)))
+
+(define  cube-pair-stream
+  (weighted-pairs integers integers cube-weight))
+
+(define (Ramanujan stream)
+  (define (iter s)
+    (let([x (stream-car s)]
+         [y (stream-car (stream-cdr s))])
+      (if(= (cube-weight x) (cube-weight y))
+         (cons-stream
+          (list (cube-weight x) x y)
+          (iter (stream-cdr s)))
+         (iter (stream-cdr s)))))
+  (iter stream))
 
 
-(define weight2 (lambda (x) (+ (* 2 (car x)) (* 3 (cadr x)) (* 5 (car x) (cadr x)))))
-(define (divide? x y) (= (remainder y x) 0))
-(define stream235
-  (stream-filter (lambda (x) (not (or (divide? 2 x) (divide? 3 x) (divide? 5 x))))
-                 integers))
-(define pairs2 (weighted-pairs stream235 stream235 weight2))
+(define pair3 (Ramanujan (stream-filter (lambda(x)(<= (car x) (cadr x)))
+                                        cube-pair-stream)))
 
-
-
+(display-stream pair3)
 
 
 
