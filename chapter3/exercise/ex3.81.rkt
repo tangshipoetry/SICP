@@ -1,6 +1,5 @@
 #lang racket
 
-
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -166,95 +165,42 @@
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
 
-(stream-filter (lambda(pair)
-                 (prime? (+ (car pair) (cadr pair))))
-               (pairs integers integers))
-
-#|
-(define (integral delayed-integrand initial-value dt)
-  (define int
-    (cons-stream initial-value
-                 (let([integrand (force delayed-integrand)])
-                   (add-streams (scale-stream integrand dt)
-                                int))))
-  int)
-|#
-
-(define (solve f y0  dt)
-  (define y (integral (delay dy) y0 dt))
-  (define dy (stream-map f y))
-  y)
-
-;(stream-ref (solve (lambda(y) y) 1 0.001) 1000)
-
-(define (integral delay-integrand initial-value dt)
-  (cons-stream
-   initial-value
-   (let ([integrand (force delay-integrand)])
-     (if (stream-null? integrand)
-         the-empty-stream
-         (integral (delay (stream-cdr integrand))
-                   (+ (* dt (stream-car integrand))
-                      initial-value)
-                   dt)))))
-
-#|
-;网上的3.78
-(define (solve-2nd a b dt y0 dy0)
-  (define y (integral (delay dy) y0 dt))
-  (define dy (integral (delay ddy) dy0 dt))
-  (define ddy (add-streams (scale-stream dy a) (scale-stream y b)))
-  y)
-
-;网上的3.79
-(define(general-solve-2nd f y0 dy0 dt)
-  (define y (integral (delay dy) y0 dt))
-  (define dy (integral (delay ddy) dy0 dt))
-  (define ddy (stream-map f dy y))
-  y)
-
-
-
-|#
-
-;自己写的
-(define (RLC R L C dt)
-  (define (rlc vc0 iL0)
-    (define vc (integral (delay dvc) vc0 dt))
-    (define iL (integral (delay diL) iL0 dt))
-    (define dvc (scale-stream iL (- (/ 1 C))))
-    (define diL (add-streams (scale-stream vc (/ 1 L))
-                             (scale-stream iL (- (/ R L)))))
-    (cons vc iL))
-  rlc)
-
-#|
-; 网上的
-(define (RLC R L C dt) 
-  (define (rcl vc0 il0) 
-    (define vc (integral (delay dvc) vc0  dt)) 
-    (define il (integral (delay dil) il0 dt)) 
-    (define dvc (scale-stream il (- (/ 1 C)))) 
-    (define dil (add-streams (scale-stream vc (/ 1 L)) 
-                             (scale-stream il (- (/ R L))))) 
-    (define (merge-stream s1 s2) 
-      (cons-stream (cons (stream-car s1) (stream-car s2)) 
-                   (merge-stream (stream-cdr s1) (stream-cdr s2)))) 
-    (merge-stream vc il)) 
-  rcl) 
-
-
-; 网上的
-(define (RLC R L C dt)  
-  (define (proc vc0 il0) 
-    (define vc (scale-stream (integral (delay il) (* (- C) vc0) dt) (/ -1 C))) 
-    (define il (integral (delay dil) il0 dt)) 
-    (define dil (add-streams (scale-stream il (/ (- R) L))  
-                             (scale-stream vc (/ 1 L)))) 
-    (stream-map cons vc il)) 
-  proc) 
-|#
+;网上的，没验证
+(define (random-numbers actions seed) 
+  (let ((action (stream-car actions)) 
+        (rest-actions (stream-cdr actions))) 
+    (cond ((eq? action 'generate) 
+           (begin 
+             (random-seed (inexact->exact (floor (* 1000 seed)))) 
+             (let ((random-number (random))) 
+               (cons-stream 
+                random-number 
+                (random-numbers rest-actions random-number))))) 
+          ((eq? action 'reset) 
+           (random-numbers 
+            (stream-cdr rest-actions) 
+            (stream-car rest-actions))) 
+          (else (error "Unknown action"))))) 
   
+(define test-actions 
+  (cons-stream 'reset (cons-stream 100 (cons-stream 'generate (cons-stream 'generate (cons-stream 'reset (cons-stream 100 (cons-stream 'generate (cons-stream 'generate (cons-stream 'reset (cons-stream 200 (cons-stream 'generate (cons-stream 'generate null))))))))))))) 
+  
+(define stream (random-numbers test-actions 0)) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -1,6 +1,5 @@
 #lang racket
 
-
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -166,104 +165,41 @@
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
 
-(stream-filter (lambda(pair)
-                 (prime? (+ (car pair) (cadr pair))))
-               (pairs integers integers))
 
-#|
-(define (integral delayed-integrand initial-value dt)
-  (define int
-    (cons-stream initial-value
-                 (let([integrand (force delayed-integrand)])
-                   (add-streams (scale-stream integrand dt)
-                                int))))
-  int)
-|#
+(define rand
+  (let ((x random-init))
+    (lambda ()
+      (set! x (rand-update x))
+      x)))
 
-(define (solve f y0  dt)
-  (define y (integral (delay dy) y0 dt))
-  (define dy (stream-map f y))
-  y)
-
-;(stream-ref (solve (lambda(y) y) 1 0.001) 1000)
-
-(define (integral delay-integrand initial-value dt)
+(define random-numbers
   (cons-stream
-   initial-value
-   (let ([integrand (force delay-integrand)])
-     (if (stream-null? integrand)
-         the-empty-stream
-         (integral (delay (stream-cdr integrand))
-                   (+ (* dt (stream-car integrand))
-                      initial-value)
-                   dt)))))
+   random-init
+   (stream-map rand-update random-numbers)))
 
-#|
-;网上的3.78
-(define (solve-2nd a b dt y0 dy0)
-  (define y (integral (delay dy) y0 dt))
-  (define dy (integral (delay ddy) dy0 dt))
-  (define ddy (add-streams (scale-stream dy a) (scale-stream y b)))
-  y)
+(define cesaro-stream
+  (map-successive-pairs
+   (lambda (r1 r2) (= (gcd r1 r2) 1))
+   random-numbers))
 
-;网上的3.79
-(define(general-solve-2nd f y0 dy0 dt)
-  (define y (integral (delay dy) y0 dt))
-  (define dy (integral (delay ddy) dy0 dt))
-  (define ddy (stream-map f dy y))
-  y)
+(define (map-successive-pairs f s)
+  (cons-stream
+   (f (stream-car s) (stream-car (stream-cdr s)))
+   (map-successive-pairs f (stream-cdr (stream-cdr s)))))
 
-
-
-|#
-
-;自己写的
-(define (RLC R L C dt)
-  (define (rlc vc0 iL0)
-    (define vc (integral (delay dvc) vc0 dt))
-    (define iL (integral (delay diL) iL0 dt))
-    (define dvc (scale-stream iL (- (/ 1 C))))
-    (define diL (add-streams (scale-stream vc (/ 1 L))
-                             (scale-stream iL (- (/ R L)))))
-    (cons vc iL))
-  rlc)
-
-#|
-; 网上的
-(define (RLC R L C dt) 
-  (define (rcl vc0 il0) 
-    (define vc (integral (delay dvc) vc0  dt)) 
-    (define il (integral (delay dil) il0 dt)) 
-    (define dvc (scale-stream il (- (/ 1 C)))) 
-    (define dil (add-streams (scale-stream vc (/ 1 L)) 
-                             (scale-stream il (- (/ R L))))) 
-    (define (merge-stream s1 s2) 
-      (cons-stream (cons (stream-car s1) (stream-car s2)) 
-                   (merge-stream (stream-cdr s1) (stream-cdr s2)))) 
-    (merge-stream vc il)) 
-  rcl) 
-
-
-; 网上的
-(define (RLC R L C dt)  
-  (define (proc vc0 il0) 
-    (define vc (scale-stream (integral (delay il) (* (- C) vc0) dt) (/ -1 C))) 
-    (define il (integral (delay dil) il0 dt)) 
-    (define dil (add-streams (scale-stream il (/ (- R) L))  
-                             (scale-stream vc (/ 1 L)))) 
-    (stream-map cons vc il)) 
-  proc) 
-|#
-  
-
-
-
-
-
-
-
-
-
+(define (monte-carlo experiment-stream passed failed)
+  (define (next passed failed)
+    (cons-stream
+     (/ passed (+ passed failed))
+     (monte-carlo
+      (stream-cdr experiment-stream) passed failed)))
+  (if (stream-car experiment-stream)
+      (next (+ passed 1) failed)
+      (next passed (+ failed 1))))
+(define pi
+  (stream-map
+   (lambda (p) (sqrt (/ 6 p)))
+   (monte-carlo cesaro-stream 0 0)))
 
 
 
