@@ -144,13 +144,49 @@
   int)
 
 
-;其实不太懂，照着书上图写的
+;其实不太懂,照着图写的
 (define (RC R C dt)
   (lambda(i v0)
     (add-streams (scale-stream i R)
                  (integral (scale-stream i (/ 1 C))
                            v0
                            dt))))
+
+
+(define (sign-change-detector current last)
+  (if(< 0 (* current last))
+     1
+     -1))
+;传感器传入信息流
+(define sense-data
+  integers)
+
+#|
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector
+    (stream-car input-stream)
+    last-value)
+   (make-zero-crossings
+    (stream-cdr input-stream)
+    (stream-car input-stream))))
+
+
+(define zero-crossings
+  (make-zero-crossings sense-data 0))
+|#
+
+(define zero-crossings
+  (stream-map sign-change-detector
+              sense-data
+              (cons-stream 0 sense-data)))
+
+
+
+
+
+
+
 
 
 

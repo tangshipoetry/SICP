@@ -144,13 +144,100 @@
   int)
 
 
-;其实不太懂，照着书上图写的
-(define (RC R C dt)
-  (lambda(i v0)
-    (add-streams (scale-stream i R)
-                 (integral (scale-stream i (/ 1 C))
-                           v0
-                           dt))))
+(define (sign-change-detector current last)
+  (cond ((and (< last 0)(>= current 0)) 1)
+        ((and (>= last 0)(< current 0)) -1)
+        (else 0)))
+;传感器传入信息流
+(define sense-data
+  (cons-stream 1 (cons-stream -3 (cons-stream 5 (cons-stream -7 (cons-stream 9 (cons-stream -11 integers)))))))
+
+#|
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector
+    (stream-car input-stream)
+    last-value)
+   (make-zero-crossings
+    (stream-cdr input-stream)
+    (stream-car input-stream))))
+|#
+
+#|
+(define (make-zero-crossings input-stream last-value)
+  (let ((avpt (/ (+ (stream-car input-stream)
+                    last-value)
+                 2)))
+    (cons-stream
+     (sign-change-detector avpt last-value)
+     (make-zero-crossings
+      (stream-cdr input-stream) avpt))))
+|#
+
+;上一题
+#|
+(define (make-zero-crossings input-stream last-value last-avpt) 
+  (let ([avpt (/ (+ (stream-car input-stream) last-value) 2)])
+    (cons-stream
+     (sign-change-detector avpt last-avpt)
+     (make-zero-crossings
+      (stream-cdr input-stream)
+      (stream-car input-stream) 
+      avpt))))
+|#
+
+#|
+
+|#
+
+;自己一开始写的
+(define (smooth stream)
+  (stream-map
+   (lambda(x y)
+     (/ (+ x y) 2))
+   stream
+   (cons-stream 0 stream)))
+
+(define (zero-crossings stream)
+  (stream-map
+   sign-change-detector
+   (stream-cdr stream)
+   stream))
+
+(define (smoothed-zero-crossing sense-data)
+  (zero-crossings (smooth sense-data)))
+
+#|
+;网上摘抄
+(define (smooth input-stream) 
+  (stream-map
+   (lambda(x y)(/ (+ x y) 2))
+   input-stream (stream-cdr input-stream))) 
+  
+(define (zero-crossings input-stream) 
+  (stream-map
+   sign-change-detector
+   input-stream
+   (stream-cdr input-stream))) 
+  
+(define (smoothed-zero-crossing sense-data) 
+  (zero-crossings (smooth sense-data)))
+|#
+
+(define x (smoothed-zero-crossing sense-data))
+(stream-ref x 1)
+(stream-ref x 2)
+(stream-ref x 3)
+(stream-ref x 4)
+
+
+
+
+
+
+
+
+
 
 
 

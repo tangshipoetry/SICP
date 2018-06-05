@@ -1,5 +1,6 @@
 #lang racket
 
+
 (define (stream-null? s)
   (null? s))
 (define the-empty-stream '())
@@ -135,24 +136,73 @@
   (stream-map stream-car
               (make-tableau transform s)))
 
+#|
+(newline)
+(display-stream
+ (accelerated-sequence euler-transform pi-stream))
+|#
+(define (divisible? x y)
+  (= (remainder x y) 0))
+(define (prime? n)
+  (define (iter guess)
+    (cond ((> (square guess) n) true)
+          ((divisible? n guess) false)
+          (else (iter (+ 1 guess))))) 
+  (iter 2))
+
+
+;序对无穷流
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (interleave s2 (stream-cdr s1)))))
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))
+
+(stream-filter (lambda(pair)
+                 (prime? (+ (car pair) (cadr pair))))
+               (pairs integers integers))
+
+
+
 ;将流作为信号
-(define (integral integrand initial-value dt)
+(define (integral- integrand initial-value dt)
   (define int
     (cons-stream initial-value
                  (add-streams (scale-stream integrand dt)
                               int)))
   int)
 
+#|
+(define (solve f y0  dt)
+  (define y (integral dy y0 dt))
+  (define dy (stream-map f y))
+  y)
 
-;其实不太懂，照着书上图写的
-(define (RC R C dt)
-  (lambda(i v0)
-    (add-streams (scale-stream i R)
-                 (integral (scale-stream i (/ 1 C))
-                           v0
-                           dt))))
+|#
 
 
+(define (integral delayed-integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+                 (let([integrand (force delayed-integrand)])
+                   (add-streams (scale-stream integrand dt)
+                                int))))
+  int)
+
+(define (solve f y0  dt)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (stream-map f y))
+  y)
+
+(stream-ref (solve (lambda(y) y) 1 0.001) 1000)
 
 
 
