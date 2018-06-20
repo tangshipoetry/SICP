@@ -66,7 +66,7 @@
     env)
   'ok)
 
-;
+;从左向右
 (define (list-of-values exps env)
   (if (no-operands? exps)
       '()
@@ -75,7 +75,7 @@
               (list-of-values (rest-operands exps) env)))))
 
 
-
+;从右向左
 (define (list-of-values exps env)
   (if (no-operands? exps)
       '()

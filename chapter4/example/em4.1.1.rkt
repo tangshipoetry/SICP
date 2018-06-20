@@ -70,7 +70,7 @@
 
 
 ;表达式的表示
-
+;判断和组成获取
 ;确定一个表开头是不是给定符号
 (define (tagged-list? exp tag)
   (if (pair? exp)
@@ -121,7 +121,7 @@
 (define (make-if predicate consequent alternative)
   (list 'if predicate consequent alternative))
 
-
+;序列表达式构造
 (define (begin? exp) (tagged-list? exp 'begin))
 (define (begin-actions exp) (cdr exp))
 (define (last-exp? seq) (null? (cdr seq)))
@@ -133,7 +133,7 @@
         ((last-exp? seq) (first-exp seq))
         (else (make-begin seq))))
 (define (make-begin seq) (cons 'begin seq))
-
+;过程应用表达式
 (define (application? exp) (pair? exp))
 (define (operator exp) (car exp))
 (define (operands exp) (cdr exp))
@@ -142,8 +142,26 @@
 (define (rest-operands ops) (cdr ops))
 
 
-
-
+(define (cond? exp) (tagged-list? exp 'cond))
+(define (cond-clauses exp) (cdr exp))
+(define (cond-else-clause? clause)
+  (eq? (cond-predicate clause) 'else))
+(define (cond-predicate clause) (car clause))
+(define (cond-actions clause) (cdr clause))
+(define (cond->if exp) (expand-clauses (cond-clauses exp)))
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false ; no else clause
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp (cond-actions first))
+                (error "ELSE clause isn't last: COND->IF"
+                       clauses))
+            (make-if (cond-predicate first)
+                     (sequence->exp (cond-actions first))
+                     (expand-clauses rest))))))
 
 
 
