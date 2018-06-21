@@ -1,7 +1,5 @@
 #lang racket
 
-
-
 (put 'op 'quote (lambda(exp env)(text-of-quotation exp)))
 (put 'op 'set! eval-assignment)
 (put 'op 'define eval-definition)
@@ -15,25 +13,9 @@
 
 
 ;数据导向
-(put 'op 'and and-eval)
-(put 'op 'or or-eval)
-(define (and-squ-eval s env)
-  (if(null? s)
-     #t
-     (if(eval (car s) env)
-        (and-squ-eval (cdr s) env)
-        #f)))
-(define (or-squ-eval s env)
-  (if(null? s)
-     #f
-     (if(eval (car s) env)
-        #t
-        (or-squ-eval (cdr s) env))))
+(put 'op 'and eval-and)
+(put 'op 'or eval-or)
 
-(define (and-eval exp env)
-  (and-squ-eval (and-content exp) env))
-(define (or-eval exp env)
-  (or-squ-eval (or-content exp) env))
 
 
 (define (eval exp env)
@@ -62,8 +44,8 @@
         ((begin? exp)
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval (cond->if exp) env))
-        ((and? exp)(and-squ-eval (and-content exp) env))
-        ((or? exp) (or-squ-eval (or-content exp) env))
+        ((and? exp)(eval-and exp env))
+        ((or? exp) (eval-or exp env))
         ((application? exp)
          (apply (eval (operator exp) env)
                 (list-of-values (operands exp) env)))
@@ -72,26 +54,52 @@
 |#
 
 
+;and抽象定义
+(define (last-and? exp)
+  (null? (cdr exp)))
+(define (first-and exp)
+  (car exp))
+(define (rest-and exp)
+  (cdr exp))
+(define (eval-and exp env)
+  (eval-and-squ (cdr exp) env))
+(define (eval-and-squ squ env)
+  (cond((last-and? squ)(eval (first-and squ) env))
+       ((eval (car squ) env) (eval-and-squ (rest-and squ) env))
+       (else #f)))
+
+;or抽象定义
+(define (last-or? exp)
+  (null? (cdr exp)))
+(define (first-or exp)
+  (car exp))
+(define (rest-or exp)
+  (cdr exp))
+(define (eval-or exp env)
+  (eval-or-squ (cdr exp) env))
+(define (eval-or-squ squ env)
+  (cond((last-or? squ)(eval (first-or squ) env))
+       ((eval (car squ) env) #t)
+       (else (eval-or-squ (rest-or squ) env))))
+
+
 
 ;派生
-(define (and-clause exp)
-  (cdr exp))
-(define (or-clause exp)
-  (cdr exp))
+(define (and? exp)(tagged-list? exp 'and))
+(define (and-exps exps)(cdr exps))
+(define (last-exp? exps)(null? (cdr exps)))
+(define (and->if exps)
+  (and-expand (and-exps exps)))
+(define (and-expand exps)
+  (if(null? exps)
+     'true
+     (let([first (first-and exps)]
+          [rest (rest-and exps)])
+       (make-if first
+                (and-expand rest)
+                'false))))
 
-(define (and->if exp)
-  (and-expand (and-clause exp)))
 
-(define (and-expand clauses)
-  (if(null? clauses)
-     #t
-     (let([first (car clauses)]
-          [rest (cdr clauses)])
-       (if(null? rest)
-          (sequence->exp first)
-          (make-if first
-                   (and-expand rest)
-                   #f)))))
 
 (define (or-expand clauses)
   (if(null? clauses)

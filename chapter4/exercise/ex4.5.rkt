@@ -13,8 +13,8 @@
         ((begin? exp)
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval (cond->if exp) env))
-        ((and? exp)(and-squ-eval (and-content exp) env))
-        ((or? exp) (or-squ-eval (or-content exp) env))
+        ((and? exp)(eval-and exp env))
+        ((or? exp) (eval-or exp env))
         ((application? exp)
          (apply (eval (operator exp) env)
                 (list-of-values (operands exp) env)))
@@ -22,6 +22,7 @@
          (error "Unknown expression type: EVAL" exp))))
 
 
+;cond派生
 (define (cond? exp) (tagged-list? exp 'cond))
 (define (cond-clauses exp) (cdr exp))
 (define (cond-else-clause? clause)
@@ -36,20 +37,14 @@
             (rest (cdr clauses)))
         (if (cond-else-clause? first)
             (if (null? rest)
-                (if(check? first)
-                   (let ([val (cond-predicate first)]
-                         [proc (caddr first)]);
-                     (make-if (cond-predicate first)
-                              ((caddr first) (cond-predicate first))
-                              (expand-clauses rest)))
-                   (sequence->exp (cond-actions first)))
+                (sequence->exp (cond-actions first))
                 (error "ELSE clause isn't last: COND->IF"
                        clauses))
             (if(check? first)
-               (let ([val (cond-predicate first)]
-                     [proc (caddr first)]);
-                 (make-if (cond-predicate first)
-                          ((caddr first) (cond-predicate first))
+               (let([proc (caddr first)]
+                    [value (car first)])
+                 (make-if value
+                          (proc value)
                           (expand-clauses rest)))
                (make-if (cond-predicate first)
                         (sequence->exp (cond-actions first))

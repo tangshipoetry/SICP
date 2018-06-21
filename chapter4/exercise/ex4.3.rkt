@@ -75,7 +75,7 @@
 (define (first-operand ops) (car ops))
 (define (rest-operands ops) (cdr ops))
 
-
+;cond派生
 (define (cond? exp) (tagged-list? exp 'cond))
 (define (cond-clauses exp) (cdr exp))
 (define (cond-else-clause? clause)
@@ -138,32 +138,31 @@
 
 ;----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+;复合过程中参数列表
 (define (list-of-values exps env)
   (if (no-operands? exps)
       '()
       (cons (eval (first-operand exps) env)
             (list-of-values (rest-operands exps) env))))
-
+;求值if表达式谓词的值,并根据其真假进行之后的操作
 (define (eval-if exp env)
   (if (true? (eval (if-predicate exp) env))
       (eval (if-consequent exp) env)
       (eval (if-alternative exp) env)))
-
-
+;求值表达式序列
 (define (eval-sequence exps env)
   (cond ((last-exp? exps)
          (eval (first-exp exps) env))
         (else
          (eval (first-exp exps) env)
          (eval-sequence (rest-exps exps) env))))
-
+;赋值操作
 (define (eval-assignment exp env)
   (set-variable-value! (assignment-variable exp)
                        (eval (assignment-value exp) env)
                        env)
   'ok)
-
+;定义操作
 (define (eval-definition exp env)
   (define-variable! (definition-variable exp)
     (eval (definition-value exp) env)
