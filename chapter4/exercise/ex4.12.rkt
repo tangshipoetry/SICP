@@ -184,14 +184,21 @@
 (define (enclosing-environment env) (cdr env))
 (define (first-frame env) (car env))
 (define the-empty-environment '())
-
+;绑定变量名值,制作框架
 (define (make-frame variables values)
-  (cons variables values))
-(define (frame-variables frame) (car frame))
-(define (frame-values frame) (cdr frame))
+  (if(= (length variables) (length values))
+     (if(null? variables)
+        '()
+        (cons (cons (car variables) (car values))
+              (make-frame (cdr variables) (cdr values))))
+     (error "variables and values have different lengthes" variables values)))
+
+
+;(define (frame-variables frame) (car frame))
+;(define (frame-values frame) (cdr frame))
+;将原框架中不存在的名值绑定并放到框架中
 (define (add-binding-to-frame! var val frame)
-  (set-car! frame (cons var (car frame)))
-  (set-cdr! frame (cons val (cdr frame))))
+  (set-car! frame (cons (cons var val) frame)))
 ;新框架扩充环境
 (define (extend-environment vars vals base-env)
   (if (= (length vars) (length vals))
@@ -202,41 +209,138 @@
 ;查找变量
 (define (lookup-variable-value var env)
   (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars)
+    (define (scan vas)
+      (cond ((null? vas)
              (env-loop (enclosing-environment env)))
-            ((eq? var (car vars)) (car vals))
-            (else (scan (cdr vars) (cdr vals)))))
+            ((eq? var (caar vas)) (cdar vas))
+            (else (scan (cdr vas)))))
     (if (eq? env the-empty-environment)
         (error "Unbound variable" var)
         (let ((frame (first-frame env)))
-          (scan (frame-variables frame)
-                (frame-values frame)))))
+          (scan frame))))
   (env-loop env))
 
-
+;修改已有变量值
 (define (set-variable-value! var val env)
   (define (env-loop env)
-    (define (scan vars vals)
-      (cond ((null? vars)
+    (define (scan vas)
+      (cond ((null? vas)
              (env-loop (enclosing-environment env)))
-            ((eq? var (car vars)) (set-car! vals val))
-            (else (scan (cdr vars) (cdr vals)))))
+            ((eq? var (caar vas)) (set-cdr! (car vas) val))
+            (else (scan (cdr vas)))))
     (if (eq? env the-empty-environment)
         (error "Unbound variable: SET!" var)
         (let ((frame (first-frame env)))
-          (scan (frame-variables frame)
-                (frame-values frame)))))
+          (scan frame))))
   (env-loop env))
 
 (define (define-variable! var val env)
   (let ((frame (first-frame env)))
-    (define (scan vars vals)
-      (cond ((null? vars)
+    (define (scan vas)
+      (cond ((null? vas)
              (add-binding-to-frame! var val frame))
-            ((eq? var (car vars)) (set-car! vals val))
-            (else (scan (cdr vars) (cdr vals)))))
-    (scan (frame-variables frame) (frame-values frame))))
+            ((eq? var (caar vars)) (set-cdr! (car vas) val))
+            (else (scan (cdr vas)))))
+    (scan frame)))
+
+;自己写的,基于4.11练习
+(define (search-val var env)
+  (let((frame (first-frame env)))
+    (define (scan vas)
+      (cond ((null? vas) (search-val var (enclosing-environment env)))
+            ((eq? var (caar vars)) (car vas))
+            (else (scan (cdr vas)))))
+    (scan frame)))
+
+;变量定义改写
+(define (define-variable! var val env)
+  (let([temp-env (list (first-frame env))])
+    (let((result (search-val var env)))
+      (if(null? result)
+         (add-binding-to-frame! var val (first-frame env))
+         (set-cdr! result val)))))
+;变量修改改写
+(define (set-variable-value! var val env)
+  (set-cdr! (search-val var env) val))
+
+;查询
+(define (lookup-variable-value var env)
+  (cdr (search-val var env)))
+
+
+
+
+;网上的
+(define (env-loop env base match) 
+  (let ((frame (first-frame env))) 
+    (define (scan vars vals) 
+      (cond ((null? vars) 
+             base) 
+            ((eq? var (car vars)) 
+             match)                  
+            (else (scan (cdr vars) (cdr vals))))) 
+    (scan (frame-variables frame) 
+          (frame-values frame)))) 
+  
+(define (lookup-variable-value var env) 
+  (env-loop env 
+            (env-loop (enclosing-environment env)) 
+            (car vals))) 
+  
+(define (set-variable-value! var val env) 
+  (env-loop env 
+            (env-loop (enclosing-environment env)) 
+            (set-car! vals val))) 
+  
+(define (define-variable! var val env) 
+  (env-loop env 
+            (add-binding-to-frame! var val frame) 
+            (set-car! vals val))) 
+
+
+;网上的
+;; general procedure 
+(define (env-loop match-proc end-frame end-env env)
+  (define (scan vars vals current-frame current-env) 
+    (cond ((null? vars) 
+           (end-frame current-frame current-env)) 
+          ((eq? var (car vars)) 
+           (match-proc vars vals current-frame current-env)) 
+          (else 
+           (scan (cdr vars) (cdr vals) current-frame current-env)))) 
+  (if (eq? env the-empty-environment) 
+      (end-env) 
+      (let ((frame (first-frame env))) 
+        (scan (frame-variables frame) 
+              (frame-values frame) 
+              frame env)))) 
+  
+;; lookup-variable-value 
+(define (lookup-variable-value var env) 
+  (define (match-proc vars vals cur-frame cur-env) (car vals)) 
+  (define (end-env) (error "Unbound variable" var)) 
+  (define (end-frame cur-frame cur-env)                       ;; !!! 
+    (env-loop match-proc end-frame end-env (enclosing-environment cur-env))) 
+  (env-loop match-proc end-frame end-env env)) 
+  
+;; set-variable-value! 
+(define (set-variable-value! var val env) 
+  (define (match-proc vars vals cur-frame cur-env) (set-car! vals val)) 
+  (define (end-env) (error "Unbound variable" var)) 
+  (define (end-frame cur-frame cur-env)                       ;; !!! 
+    (env-loop match-proc end-frame end-env (enclosing-environment cur-env))) 
+  (env-loop match-proc end-frame end-env env)) 
+  
+;; define-variable! 
+(define (define-variable! var val env) 
+  (define (match-proc vars vals cur-frame cur-env) (set-car! vals val)) 
+  (define (end-env) (error "Unbound variable" var)) 
+  (define (end-frame cur-frame cur-env)                       ;; !!! 
+    (add-binding-to-frame! var val cur-frame)) 
+  (env-loop match-proc end-frame end-env env)) 
+
+
+
 
 
 
