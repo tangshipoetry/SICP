@@ -1,6 +1,5 @@
 #lang racket
 
-
 (define (eval exp env)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
@@ -243,101 +242,61 @@
             (else (scan (cdr vas)))))
     (scan frame)))
 
-;自己写的,基于4.11练习
-(define (search-val var env)
-  (let((frame (first-frame env)))
+
+
+;解绑第一个遇到的--基于4.11
+(define (make-unbound! var env)
+  (define (env-loop env)
     (define (scan vas)
-      (cond ((null? vas) (search-val var (enclosing-environment env)))
-            ((eq? var (caar vars)) (car vas))
+      (cond ((null? vas)
+             (env-loop (enclosing-environment env)))
+            ((eq? var (caar vas)) (set-cdr! vas (cddr vas)))
             (else (scan (cdr vas)))))
-    (scan frame)))
-
-;变量定义改写
-(define (define-variable! var val env)
-  (let([temp-env (list (first-frame env))])
-    (let((result (search-val var env)))
-      (if(null? result)
-         (add-binding-to-frame! var val (first-frame env))
-         (set-cdr! result val)))))
-;变量修改改写
-(define (set-variable-value! var val env)
-  (set-cdr! (search-val var env) val))
-
-;查询
-(define (lookup-variable-value var env)
-  (cdr (search-val var env)))
+    (if (eq? env the-empty-environment)
+        (display "no such symbol")
+        (let ((frame (first-frame env)))
+          (scan frame))))
+  (env-loop env))
 
 
+;网上的
+(define (make-unbound! var env) 
+  (let* ((frame (first-frame env)) 
+         (vars (frame-variables frame)) 
+         (vals (frame-values frame))) 
+    (define (scan pre-vars pre-vals vars vals) 
+      (if (not (null? vars)) 
+          (if (eq? var (car vars)) 
+              (begin (set-cdr! pre-vars (cdr vars)) 
+                     (set-cdr! pre-vals (cdr vals))) 
+              (scan vars vals (cdr vars) (cdr vals))))) 
+    (if (not (null? vars)) 
+        (if (eq? var (car vars)) 
+            (begin (set-car! frame (cdr vars)) 
+                   (set-cdr! frame (cdr vals))) 
+            (scan vars vals (cdr vars) (cdr vals))))))
 
 
-;网上的--还没仔细看
-(define (env-loop env base match) 
-  (let ((frame (first-frame env))) 
-    (define (scan vars vals) 
-      (cond ((null? vars) 
-             base) 
-            ((eq? var (car vars)) 
-             match)                  
-            (else (scan (cdr vars) (cdr vals))))) 
-    (scan (frame-variables frame) 
-          (frame-values frame)))) 
-  
-(define (lookup-variable-value var env) 
-  (env-loop env 
-            (env-loop (enclosing-environment env)) 
-            (car vals))) 
-  
-(define (set-variable-value! var val env) 
-  (env-loop env 
-            (env-loop (enclosing-environment env)) 
-            (set-car! vals val))) 
-  
-(define (define-variable! var val env) 
-  (env-loop env 
-            (add-binding-to-frame! var val frame) 
-            (set-car! vals val))) 
 
 
-;网上的--还没仔细看
-;; general procedure 
-(define (env-loop match-proc end-frame end-env env)
-  (define (scan vars vals current-frame current-env) 
-    (cond ((null? vars) 
-           (end-frame current-frame current-env)) 
-          ((eq? var (car vars)) 
-           (match-proc vars vals current-frame current-env)) 
-          (else 
-           (scan (cdr vars) (cdr vals) current-frame current-env)))) 
-  (if (eq? env the-empty-environment) 
-      (end-env) 
-      (let ((frame (first-frame env))) 
-        (scan (frame-variables frame) 
-              (frame-values frame) 
-              frame env)))) 
-  
-;; lookup-variable-value 
-(define (lookup-variable-value var env) 
-  (define (match-proc vars vals cur-frame cur-env) (car vals)) 
-  (define (end-env) (error "Unbound variable" var)) 
-  (define (end-frame cur-frame cur-env)                       ;; !!! 
-    (env-loop match-proc end-frame end-env (enclosing-environment cur-env))) 
-  (env-loop match-proc end-frame end-env env)) 
-  
-;; set-variable-value! 
-(define (set-variable-value! var val env) 
-  (define (match-proc vars vals cur-frame cur-env) (set-car! vals val)) 
-  (define (end-env) (error "Unbound variable" var)) 
-  (define (end-frame cur-frame cur-env)                       ;; !!! 
-    (env-loop match-proc end-frame end-env (enclosing-environment cur-env))) 
-  (env-loop match-proc end-frame end-env env)) 
-  
-;; define-variable! 
-(define (define-variable! var val env) 
-  (define (match-proc vars vals cur-frame cur-env) (set-car! vals val)) 
-  (define (end-env) (error "Unbound variable" var)) 
-  (define (end-frame cur-frame cur-env)                       ;; !!! 
-    (add-binding-to-frame! var val cur-frame)) 
-  (env-loop match-proc end-frame end-env env)) 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
