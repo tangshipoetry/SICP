@@ -1,6 +1,6 @@
 #lang racket
 
-;网上的
+;网上的--还没看
 
 (define (apply procedure arguments env) 
   (cond 
