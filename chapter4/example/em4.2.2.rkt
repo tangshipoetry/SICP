@@ -1,16 +1,16 @@
 #lang racket
 
-
+;加入eval
 ((application? exp)
  (apply (actual-value (operator exp) env)
         (operands exp)
         env))
-
+;强制求值
 (define (actual-value exp env)
   (force-it (eval exp env)))
 
 
-
+;apply过程惰性修改
 (define (apply procedure arguments env)
   (cond ((primitive-procedure? procedure)
          (apply-primitive-procedure
@@ -26,7 +26,7 @@
         (else (error "Unknown procedure type: APPLY"
                      procedure))))
 
-
+;基本过程操作参数列表强迫求值
 (define (list-of-arg-values exps env)
   (if (no-operands? exps)
       '()
@@ -34,6 +34,7 @@
                           env)
             (list-of-arg-values (rest-operands exps)
                                 env))))
+;符合过程操作参数列表延迟操作 
 (define (list-of-delayed-args exps env)
   (if (no-operands? exps)
       '()
@@ -41,7 +42,7 @@
                       env)
             (list-of-delayed-args (rest-operands exps)
                                   env))))
-
+;if语句延迟操作
 (define (eval-if exp env)
   (if (true? (actual-value (if-predicate exp) env))
       (eval (if-consequent exp) env)
@@ -61,14 +62,13 @@
 
 
 ;Representing thunks
+;强迫求值
 (define (force-it obj)
   (if (thunk? obj)
       (actual-value (thunk-exp obj) (thunk-env obj))
       obj))
 
-
-
-
+;延迟操作实现，判断谓词，选择器
 (define (delay-it exp env)
   (list 'thunk exp env))
 (define (thunk? obj)
@@ -76,7 +76,7 @@
 (define (thunk-exp thunk) (cadr thunk))
 (define (thunk-env thunk) (caddr thunk))
 
-
+;是否已经求值，记忆化操作
 (define (evaluated-thunk? obj)
   (tagged-list? obj 'evaluated-thunk))
 (define (thunk-value evaluated-thunk)
@@ -95,9 +95,16 @@
         (else obj)))
 
 
+(define (integral integrand initial-value dt)
+  (define int
+    (cons initial-value
+          (add-lists (scale-list integrand dt) int)))
+  int)
 
-
-
+(define (solve f y0 dt)
+  (define y (integral dy y0 dt))
+  (define dy (map f y))
+  y)
 
 
 
