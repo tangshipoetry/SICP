@@ -1,5 +1,13 @@
 #lang racket
 
+;模仿的
+(rule (reverse (?h . ?t) result)
+      (and (reverse (?t) ?reversed-t)
+           (append-to-form (?reversed-t (?h) result))))
+
+
+
+
 ;网上的
 ;; from the book
 (run-query '(assert! (rule (append-to-form () ?y ?y))))
