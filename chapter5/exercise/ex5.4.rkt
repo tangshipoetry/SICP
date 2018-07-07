@@ -13,12 +13,12 @@
  (test (op =) (reg n) (const 0))
  (branch (label base-case))
  (save continue)
- (save n)
+ ;(save n);不需要保存
  (assign n (op -) (reg n) (const 1))
  (assign continue (label after-expt))
  (goto (label expt-loop))
  after-expt
- (restore n)
+ ;(restore n);不需要保存
  (restore continue)
  (assign val (op *) (reg b) (reg val)) ;val now contains n(n - 1)!
  (goto (reg continue)) ;return to caller
