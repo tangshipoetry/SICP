@@ -68,7 +68,9 @@ signal-error
 
 
 
-
+(define (make-instruction-sequence
+         needs modifies statements)
+  (list needs modifies statements))
 
 
 
