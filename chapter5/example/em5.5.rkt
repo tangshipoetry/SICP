@@ -370,12 +370,321 @@ proc-return
 
 
 
+(define (registers-needed s)
+  (if (symbol? s) '() (car s)))
+(define (registers-modified s)
+  (if (symbol? s) '() (cadr s)))
+(define (statements s)
+  (if (symbol? s) (list s) (caddr s)))
+
+
+(define (needs-register? seq reg)
+  (memq reg (registers-needed seq)))
+(define (modifies-register? seq reg)
+  (memq reg (registers-modified seq)))
+
+
+;连接任意多顺序执行指令序列
+(define (append-instruction-sequences . seqs)
+  (define (append-2-sequences seq1 seq2)
+    (make-instruction-sequence
+     (list-union
+      (registers-needed seq1)
+      (list-difference (registers-needed seq2)
+                       (registers-modified seq1)))
+     (list-union (registers-modified seq1)
+                 (registers-modified seq2))
+     (append (statements seq1) (statements seq2))))
+  (define (append-seq-list seqs)
+    (if (null? seqs)
+        (empty-instruction-sequence)
+        (append-2-sequences
+         (car seqs)
+         (append-seq-list (cdr seqs)))))
+  (append-seq-list seqs))
+
+
+
+(define (list-union s1 s2)
+  (cond ((null? s1) s2)
+        ((memq (car s1) s2) (list-union (cdr s1) s2))
+        (else (cons (car s1) (list-union (cdr s1) s2)))))
+(define (list-difference s1 s2)
+  (cond ((null? s1) '())
+        ((memq (car s1) s2) (list-difference (cdr s1) s2))
+        (else (cons (car s1)
+                    (list-difference (cdr s1) s2)))))
+
+;seq1与seq2结合,加上seq1前后合适的save和restore操作
+(define (preserving regs seq1 seq2)
+  (if (null? regs)
+      (append-instruction-sequences seq1 seq2)
+      (let ((first-reg (car regs)))
+        (if (and (needs-register? seq2 first-reg)
+                 (modifies-register? seq1 first-reg))
+            (preserving (cdr regs)
+                        (make-instruction-sequence
+                         (list-union (list first-reg)
+                                     (registers-needed seq1))
+                         (list-difference (registers-modified seq1)
+                                          (list first-reg))
+                         (append `((save ,first-reg))
+                                 (statements seq1)
+                                 `((restore ,first-reg))))
+                        seq2)
+            (preserving (cdr regs) seq1 seq2)))))
+
+;用于compile-lambda中,将过程体和另一个序列结合
+(define (tack-on-instruction-sequence seq body-seq)
+  (make-instruction-sequence
+   (registers-needed seq)
+   (registers-modified seq)
+   (append (statements seq)
+           (statements body-seq))))
+
+
+;并行拼接
+(define (parallel-instruction-sequences seq1 seq2)
+  (make-instruction-sequence
+   (list-union (registers-needed seq1)
+               (registers-needed seq2))
+   (list-union (registers-modified seq1)
+               (registers-modified seq2))
+   (append (statements seq1)
+           (statements seq2))))
+
+
+
+
+(assign val
+        (op make-compiled-procedure)
+        (label entry2)
+        (reg env))
+(goto (label after-lambda1))
+entry2
+(assign env (op compiled-procedure-env) (reg proc))
+(assign env
+        (op extend-environment)
+        (const (n))
+        (reg argl)
+        (reg env))
+⟨compilation of procedure body⟩
+after-lambda1
+(perform (op define-variable!)
+         (const factorial)
+         (reg val)
+         (reg env))
+(assign val (const ok))
+
+
+
+
+(assign proc
+        (op lookup-variable-value) (const =) (reg env))
+(assign val (const 1))
+(assign argl (op list) (reg val))
+(assign val
+        (op lookup-variable-value) (const n) (reg env))
+(assign argl (op cons) (reg val) (reg argl))
+(test (op primitive-procedure?) (reg proc))
+(branch (label primitive-branch17))
+compiled-branch16
+(assign continue (label after-call15))
+(assign val (op compiled-procedure-entry) (reg proc))
+(goto (reg val))
+primitive-branch17
+(assign val
+        (op apply-primitive-procedure)
+        (reg proc)
+        (reg argl))
+after-call15
 
 
 
 
 
 
+
+
+;完整的factorial编译
+;; construct the procedure and skip over code for the procedure body
+(assign val
+        (op make-compiled-procedure)
+        (label entry2)
+        (reg env))
+(goto (label after-lambda1))
+entry2 ; calls to factorial will enter here
+(assign env (op compiled-procedure-env) (reg proc))
+(assign env
+        (op extend-environment)
+        (const (n))
+        (reg argl)
+        (reg env))
+;; begin actual procedure body
+(save continue)
+(save env)
+;; compute (= n 1)
+(assign proc
+        (op lookup-variable-value)
+        (const =)
+        (reg env))
+(assign val (const 1))
+(assign argl (op list) (reg val))
+(assign val
+        (op lookup-variable-value)
+        (const n)
+        (reg env))
+(assign argl (op cons) (reg val) (reg argl))
+(test (op primitive-procedure?) (reg proc))
+(branch (label primitive-branch17))
+compiled-branch16
+(assign continue (label after-call15))
+(assign val (op compiled-procedure-entry) (reg proc))
+(goto (reg val))
+primitive-branch17
+(assign val
+        (op apply-primitive-procedure)
+        (reg proc)
+        (reg argl))
+after-call15 ; val now contains result of (= n 1)
+(restore env)
+(restore continue)
+(test (op false?) (reg val))
+(branch (label false-branch4))
+true-branch5 ; return 1
+(assign val (const 1))
+(goto (reg continue))
+false-branch4
+;; compute and return (* (factorial (- n 1)) n)
+(assign proc
+        (op lookup-variable-value)
+        (const *)
+        (reg env))
+(save continue)
+(save proc) ; save * procedure
+(assign val
+        (op lookup-variable-value)
+        (const n)
+        (reg env))
+(assign argl (op list) (reg val))
+(save argl) ; save partial argument list for *
+;; compute (factorial (- n 1)), which is the other argument for *
+(assign proc
+        (op lookup-variable-value)
+        (const factorial)
+        (reg env))
+(save proc) ; save factorial procedure
+;; compute (- n 1), which is the argument for factorial
+(assign proc
+        (op lookup-variable-value)
+        (const -)
+        (reg env))
+(assign val (const 1))
+(assign argl (op list) (reg val))
+(assign val
+        (op lookup-variable-value)
+        (const n)
+        (reg env))
+(assign argl (op cons) (reg val) (reg argl))
+(test (op primitive-procedure?) (reg proc))
+(branch (label primitive-branch8))
+compiled-branch7
+(assign continue (label after-call6))
+(assign val (op compiled-procedure-entry) (reg proc))
+(goto (reg val))
+primitive-branch8
+(assign val
+        (op apply-primitive-procedure)
+        (reg proc)
+        (reg argl))
+after-call6 ; val now contains result of (- n 1)
+(assign argl (op list) (reg val))
+(restore proc) ; restore factorial
+;; apply factorial
+(test (op primitive-procedure?) (reg proc))
+(branch (label primitive-branch11))
+compiled-branch10
+(assign continue (label after-call9))
+(assign val (op compiled-procedure-entry) (reg proc))
+(goto (reg val))
+primitive-branch11
+(assign val
+        (op apply-primitive-procedure)
+        (reg proc)
+        (reg argl))
+after-call9 ; val now contains result of (factorial (- n 1))
+(restore argl) ; restore partial argument list for *
+(assign argl (op cons) (reg val) (reg argl))
+(restore proc) ; restore *
+(restore continue)
+;; apply * and return its value
+(test (op primitive-procedure?) (reg proc))
+(branch (label primitive-branch14))
+compiled-branch13
+;; note that a compound procedure here is called tail-recursively
+(assign val (op compiled-procedure-entry) (reg proc))
+(goto (reg val))
+primitive-branch14
+(assign val
+        (op apply-primitive-procedure)
+        (reg proc)
+        (reg argl))
+(goto (reg continue))
+after-call12
+after-if3
+after-lambda1
+;; assign the procedure to the variable factorial
+(perform (op define-variable!)
+         (const factorial)
+         (reg val)
+         (reg env))
+(assign val (const ok))
+
+
+
+apply-dispatch
+(test (op primitive-procedure?) (reg proc))
+(branch (label primitive-apply))
+(test (op compound-procedure?) (reg proc))
+(branch (label compound-apply))
+(test (op compiled-procedure?) (reg proc))
+(branch (label compiled-apply))
+(goto (label unknown-procedure-type))
+compiled-apply
+(restore continue)
+(assign val (op compiled-procedure-entry) (reg proc))
+(goto (reg val))
+
+
+
+external-entry
+(perform (op initialize-stack))
+(assign env (op get-global-environment))
+(assign continue (label print-result))
+(goto (reg val))
+
+
+(define (user-print object)
+  (cond ((compound-procedure? object)
+         (display (list 'compound-procedure
+                        (procedure-parameters object)
+                        (procedure-body object)
+                        '<procedure-env>)))
+        ((compiled-procedure? object)
+         (display '<compiled-procedure>))
+        (else (display object))))
+
+
+(define (compile-and-go expression)
+  (let ((instructions
+         (assemble
+          (statements
+           (compile expression 'val 'return))
+          eceval)))
+    (set! the-global-environment (setup-environment))
+    (set-register-contents! eceval 'val instructions)
+    (set-register-contents! eceval 'flag true)
+    (start eceval)))
 
 
 
